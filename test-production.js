@@ -71,9 +71,9 @@ async function testProduction() {
     console.log(`Warnings: ${results.warnings}`);
     
     if (results.failed === 0) {
-        console.log('\n✓ All critical tests passed! System is production ready.');
+        console.log('\nAll critical tests passed! System is production ready.');
     } else {
-        console.log('\n✗ Some tests failed. Please fix issues before deploying.');
+        console.log('\nSome tests failed. Please fix issues before deploying.');
     }
     
     return results;

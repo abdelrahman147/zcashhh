@@ -849,13 +849,13 @@ function initTestSuite() {
             const isSuccess = parseFloat(rpcErrorRate) < 50 && results.failed === 0;
             
             if (isSuccess) {
-                console.log(`\n✓ SUCCESS! All tests passed with acceptable RPC error rate.`);
+                console.log(`\nSUCCESS! All tests passed with acceptable RPC error rate.`);
                 console.log(`  Pass Rate: ${passRate}%`);
                 console.log(`  RPC Error Rate: ${rpcErrorRate}% (threshold: <50%)`);
                 console.log(`  API Failures: ${results.failed}`);
                 break;
             } else {
-                console.log(`\n✗ Test run ${attempt} did not meet success criteria.`);
+                console.log(`\nFAIL: Test run ${attempt} did not meet success criteria.`);
                 console.log(`  Pass Rate: ${passRate}%`);
                 console.log(`  RPC Error Rate: ${rpcErrorRate}% (threshold: <50%)`);
                 console.log(`  API Failures: ${results.failed}`);
@@ -1279,7 +1279,7 @@ async function showTokensModal() {
             tokens.forEach(token => {
                 html += `
                     <div class="portfolio-item">
-                        <div class="token-icon">🪙</div>
+                        <div class="token-icon"></div>
                         <div class="token-name">${token.mint.substring(0, 8)}...</div>
                         <div class="token-balance">${token.balance.toFixed(4)}</div>
                         <div class="token-value">Mint: ${token.mint.substring(0, 16)}...</div>
@@ -1894,7 +1894,7 @@ function displayPoolIntegrityReport(report) {
     if (!resultsEl) return;
     
     const statusClass = report.valid ? 'success' : 'error';
-    const statusIcon = report.valid ? '✓' : '✗';
+    const statusIcon = report.valid ? 'OK' : 'ERR';
     
     let html = `
         <div class="check-result ${statusClass}">

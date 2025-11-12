@@ -20,7 +20,7 @@ class BridgeTestSuite {
     }
     
     async runFullTestSuite(iterations = 1000) {
-        console.log(`🚀 Starting comprehensive test suite: ${iterations} iterations`);
+        console.log(`Starting comprehensive test suite: ${iterations} iterations`);
         const startTime = Date.now();
         
         try {

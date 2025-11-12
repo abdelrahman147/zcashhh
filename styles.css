@@ -1638,7 +1638,7 @@ pre code {
 }
 
 .check-errors li::before {
-    content: '✗';
+    content: 'X';
     position: absolute;
     left: 0;
     color: var(--accent-error);
