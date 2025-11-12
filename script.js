@@ -2427,23 +2427,23 @@ function highlightCode() {
         
         
         code = code.replace(/\b(async|await|function|const|let|var|if|else|for|while|return|import|from|export|class|interface|type|enum|fn|pub|use|async|await|def|async def)\b/g, 
-            '<span style="color: var(--code-purple);">$&</span>');
+            function(match) { return '<span style="color: var(--code-purple);">' + match + '</span>'; });
         
         
         code = code.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, 
-            '<span style="color: var(--code-green);">$&</span>');
+            function(match) { return '<span style="color: var(--code-green);">' + match + '</span>'; });
         
         
         code = code.replace(/\b([a-zA-Z_$][a-zA-Z0-9_$]*)\s*(?=\()/g, 
-            '<span style="color: var(--code-blue);">$1</span>');
+            function(match, p1) { return '<span style="color: var(--code-blue);">' + p1 + '</span>'; });
         
         
         code = code.replace(/(\/\/.*$)/gm, 
-            '<span style="color: var(--text-muted); font-style: italic;">$1</span>');
+            function(match) { return '<span style="color: var(--text-muted); font-style: italic;">' + match + '</span>'; });
         
         
         code = code.replace(/\b(\d+\.?\d*)\b/g, 
-            '<span style="color: var(--code-yellow);">$1</span>');
+            function(match) { return '<span style="color: var(--code-yellow);">' + match + '</span>'; });
         
         block.innerHTML = code;
     });
