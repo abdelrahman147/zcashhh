@@ -580,14 +580,14 @@ class BridgeTestSuite {
 ╔══════════════════════════════════════════════════════════╗
 ║           TEST SUITE RESULTS - ${this.results.totalTests.toString().padStart(6)} TESTS          ║
 ╠══════════════════════════════════════════════════════════╣
-║  ✅ Passed:        ${this.results.passed.toString().padStart(10)} (${passRate}%)          ║
-║  ❌ Failed:        ${this.results.failed.toString().padStart(10)}                    ║
-║  ⚠️  Warnings:      ${this.results.warnings.length.toString().padStart(10)}                    ║
-║  ⏱️  Total Time:    ${totalTime.toString().padStart(10)}s                  ║
-║  🚀 Tests/Sec:      ${testsPerSec.toString().padStart(10)}                    ║
+║  Passed:        ${this.results.passed.toString().padStart(10)} (${passRate}%)          ║
+║  Failed:        ${this.results.failed.toString().padStart(10)}                    ║
+║  Warnings:      ${this.results.warnings.length.toString().padStart(10)}                    ║
+║  Total Time:    ${totalTime.toString().padStart(10)}s                  ║
+║  Tests/Sec:      ${testsPerSec.toString().padStart(10)}                    ║
 ║  Avg Time:      ${this.results.performance.avgTime.toFixed(2).padStart(10)}ms                  ║
 ║  Min Time:       ${this.results.performance.minTime.toFixed(2).padStart(10)}ms                  ║
-║  🐌 Max Time:       ${this.results.performance.maxTime.toFixed(2).padStart(10)}ms                  ║
+║  Max Time:       ${this.results.performance.maxTime.toFixed(2).padStart(10)}ms                  ║
 ╚══════════════════════════════════════════════════════════╝
         `);
         

@@ -1801,7 +1801,7 @@ function displayCheckResults(result) {
     if (!resultsEl) return;
     
     const statusClass = result.valid ? 'success' : 'error';
-    const statusIcon = result.valid ? '✓' : '✗';
+    const statusIcon = result.valid ? 'OK' : 'ERR';
     
     let html = `
         <div class="check-result ${statusClass}">
@@ -2031,9 +2031,9 @@ function initTerminalAnimation() {
     const lines = [
         { text: '$ zcash-bridge --init', type: 'command', delay: 500 },
         { text: 'Initializing cross-chain protocol...', type: 'output', delay: 1500 },
-        { text: '✓ Connected to Zcash network', type: 'success', delay: 2500 },
-        { text: '✓ Connected to Solana network', type: 'success', delay: 3500 },
-        { text: '✓ Privacy layer activated', type: 'success', delay: 4500 },
+        { text: 'Connected to Zcash network', type: 'success', delay: 2500 },
+        { text: 'Connected to Solana network', type: 'success', delay: 3500 },
+        { text: 'Privacy layer activated', type: 'success', delay: 4500 },
         { text: '$', type: 'prompt', delay: 5500 }
     ];
 

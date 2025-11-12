@@ -16,7 +16,7 @@ async function testProduction() {
                 console.log(`WARNING: ${name}`);
                 results.warnings++;
             } else {
-                console.log(`✗ ${name}`);
+                console.log(`FAIL: ${name}`);
                 results.failed++;
             }
         }
