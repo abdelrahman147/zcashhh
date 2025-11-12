@@ -199,15 +199,8 @@ async function initBridge() {
 
 
 function initBridgeUI() {
-    try {
-        if (!document.getElementById('connect-wallet-btn')) {
-            console.error('Button elements not found - DOM may not be ready');
-            setTimeout(initBridgeUI, 100);
-            return;
-        }
-    } catch (error) {
-        console.error('Error in initBridgeUI check:', error);
-        setTimeout(initBridgeUI, 100);
+    if (!document.getElementById('connect-wallet-btn')) {
+        setTimeout(function() { initBridgeUI(); }, 100);
         return;
     }
     
