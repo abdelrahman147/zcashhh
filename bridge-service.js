@@ -967,13 +967,12 @@ class ZcashSolanaBridge {
         }
         
         const transaction = new this.SolanaWeb3.Transaction();
-        transaction.add(
-            this.SolanaWeb3.SystemProgram.transfer({
-                fromPubkey: fromPubkey,
-                toPubkey: toPubkey,
-                lamports: lamports
-            })
-        );
+        const transferInstruction = this.SolanaWeb3.SystemProgram.transfer({
+            fromPubkey: fromPubkey,
+            toPubkey: toPubkey,
+            lamports: Number(lamports)
+        });
+        transaction.add(transferInstruction);
         
         
         let blockhash, lastValidBlockHeight;

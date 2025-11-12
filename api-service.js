@@ -261,13 +261,12 @@ class ProtocolAPI {
             }
 
             const transaction = new this.bridge.SolanaWeb3.Transaction();
-            transaction.add(
-                this.bridge.SolanaWeb3.SystemProgram.transfer({
-                    fromPubkey: senderPubkey,
-                    toPubkey: recipientPubkey,
-                    lamports: lamports
-                })
-            );
+            const transferInstruction = this.bridge.SolanaWeb3.SystemProgram.transfer({
+                fromPubkey: senderPubkey,
+                toPubkey: recipientPubkey,
+                lamports: Number(lamports)
+            });
+            transaction.add(transferInstruction);
 
             if (memo && memo.trim()) {
                 const memoProgram = new this.bridge.SolanaWeb3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');

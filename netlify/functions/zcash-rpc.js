@@ -28,7 +28,7 @@ exports.handler = async (event, context) => {
         }
         
         const ZCASH_RPC_URL = process.env.ZCASH_RPC_URL || 'https://zec.nownodes.io';
-        const ZCASH_RPC_USER = process.env.ZCASH_RPC_USER || '';
+        const ZCASH_RPC_USER = process.env.ZCASH_RPC_USER || process.env.VITE_ZCASH_RPC_USER || '';
         
         const rpcUrl = ZCASH_RPC_USER ? `${ZCASH_RPC_URL}/${ZCASH_RPC_USER}` : ZCASH_RPC_URL;
         
