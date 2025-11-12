@@ -1,0 +1,24 @@
+{
+  "name": "zcash-solana-bridge",
+  "version": "1.0.0",
+  "description": "ZCash to Solana cross-chain bridge with mini game",
+  "main": "leaderboard-api.js",
+  "scripts": {
+    "start-api": "node leaderboard-api.js",
+    "start": "node leaderboard-api.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2"
+  },
+  "keywords": [
+    "zcash",
+    "solana",
+    "blockchain",
+    "bridge",
+    "game"
+  ],
+  "author": "",
+  "license": "MIT"
+}

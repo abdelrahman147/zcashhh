@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZCash → Solana | Private Cross-Chain Protocol</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Terminal Header -->
+    <div class="terminal-bar">
+        <div class="terminal-controls">
+            <span class="control close"></span>
+            <span class="control minimize"></span>
+            <span class="control maximize"></span>
+        </div>
+        <div class="terminal-title">zcash-protocol@solana:~$</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="prompt">$</span> ZCASH<span class="accent">→</span>SOL
+            </div>
+            <div class="nav-links">
+                <a href="#protocol" class="nav-link">Protocol</a>
+                <a href="#checker" class="nav-link">Checker</a>
+                <a href="#bridge-interface" class="nav-link">Bridge</a>
+                <a href="#proof" class="nav-link">Proof</a>
+                <a href="#game" class="nav-link">Game</a>
+                <a href="#api" class="nav-link">API</a>
+                <a href="#docs" class="nav-link">Docs</a>
+                <button class="btn-primary">Launch App</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="terminal-window" id="hero-terminal">
+                    <div class="terminal-header-small">
+                        <span class="terminal-dot"></span>
+                        <span class="terminal-dot"></span>
+                        <span class="terminal-dot"></span>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-line">
+                            <span class="prompt">$</span> <span class="command">zcash-bridge --init</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="output">Initializing cross-chain protocol...</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="output success">✓ Connected to Zcash network</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="output success">✓ Connected to Solana network</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="output success">✓ Privacy layer activated</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="prompt">$</span> <span class="cursor-blink">_</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-text">
+                    <h1 class="hero-title">
+                        <span class="code-tag">&lt;protocol&gt;</span><br>
+                        Private Cross-Chain<br>
+                        Payments
+                        <span class="code-tag">&lt;/protocol&gt;</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Buy Solana assets privately with native <span class="highlight">$ZEC</span>.<br>
+                        Zero-knowledge privacy. Seamless cross-chain.
+                    </p>
+                    <div class="hero-actions">
+                        <button class="btn-primary btn-large" id="connect-wallet-btn">Connect Wallet</button>
+                        <button class="btn-secondary btn-large" id="bridge-btn" style="display:none;">Start Bridge</button>
+                        <button class="btn-secondary btn-large">View Docs</button>
+                        <button class="btn-secondary btn-large" id="run-tests-btn">Run Stress Test</button>
+                    </div>
+                    <div class="hero-stats" id="pool-stats">
+                        <div class="stat">
+                            <div class="stat-value" id="stat-transactions" data-target="0">0</div>
+                            <div class="stat-label">Transactions</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="stat-users" data-target="0">0</div>
+                            <div class="stat-label">Active Users</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="stat-pool-balance" data-target="0">0</div>
+                            <div class="stat-label">Pool Balance (ZEC)</div>
+                        </div>
+                    </div>
+                    <div id="wallet-status" class="wallet-status" style="display:none;">
+                        <div class="wallet-header">
+                            <div class="wallet-avatar" id="wallet-avatar">👛</div>
+                            <div class="wallet-main-info">
+                                <div class="wallet-name" id="wallet-name">Solana Wallet</div>
+                                <div class="wallet-address" id="solana-address">Not connected</div>
+                            </div>
+                            <button class="wallet-menu-btn" id="wallet-menu-btn">⋮</button>
+                        </div>
+                        <div class="wallet-balance-card">
+                            <div class="balance-label">Total Balance</div>
+                            <div class="balance-amount" id="total-balance">0.00 SOL</div>
+                            <div class="balance-usd" id="balance-usd">$0.00</div>
+                        </div>
+                        <div class="wallet-quick-stats">
+                            <div class="quick-stat">
+                                <div class="quick-stat-label">Tokens</div>
+                                <div class="quick-stat-value" id="token-count">0</div>
+                            </div>
+                            <div class="quick-stat">
+                                <div class="quick-stat-label">NFTs</div>
+                                <div class="quick-stat-value" id="nft-count">0</div>
+                            </div>
+                            <div class="quick-stat">
+                                <div class="quick-stat-label">TXs</div>
+                                <div class="quick-stat-value" id="tx-count">0</div>
+                            </div>
+                        </div>
+                        <div class="wallet-actions">
+                            <button class="wallet-action-btn" id="view-portfolio-btn">📊 Portfolio</button>
+                            <button class="wallet-action-btn" id="view-tokens-btn">🪙 Tokens</button>
+                            <button class="wallet-action-btn" id="view-nfts-btn">🖼️ NFTs</button>
+                            <button class="wallet-action-btn" id="view-history-btn">📜 History</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Protocol Section -->
+    <section class="protocol-section" id="protocol">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">// protocol</span>
+                <h2 class="section-title">How It Works</h2>
+            </div>
+            <div class="protocol-flow">
+                <div class="flow-step" data-step="1">
+                    <div class="step-number">01</div>
+                    <div class="step-content">
+                        <h3>Deposit $ZEC</h3>
+                        <p>Send your Zcash to our shielded pool. Your transaction is private and encrypted.</p>
+                        <div class="code-snippet">
+                            <div class="code-header">
+                                <span class="code-lang">bash</span>
+                            </div>
+                            <pre><code>zcash-cli sendtoaddress \\
+  "zt1..." \\
+  1.0 \\
+  --memo "solana-bridge"</code></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step" data-step="2">
+                    <div class="step-number">02</div>
+                    <div class="step-content">
+                        <h3>Zero-Knowledge Proof</h3>
+                        <p>We generate a zero-knowledge proof that you own the funds without revealing your identity.</p>
+                        <div class="code-snippet">
+                            <div class="code-header">
+                                <span class="code-lang">bash</span>
+                            </div>
+                            <pre><code>zcash-bridge generate-proof \\
+  --txid "abc123..." \\
+  --amount 1.0 \\
+  --recipient "solana-address"</code></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step" data-step="3">
+                    <div class="step-number">03</div>
+                    <div class="step-content">
+                        <h3>Bridge to Solana</h3>
+                        <p>Your proof is verified and equivalent value is minted on Solana as private SPL tokens.</p>
+                        <div class="code-snippet">
+                            <div class="code-header">
+                                <span class="code-lang">bash</span>
+                            </div>
+                            <pre><code>zcash-bridge verify-and-mint \\
+  --proof-file proof.json \\
+  --amount 1.0 \\
+  --recipient "solana-address"</code></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step" data-step="4">
+                    <div class="step-number">04</div>
+                    <div class="step-content">
+                        <h3>Trade Privately</h3>
+                        <p>Use your private tokens to buy any Solana asset. Your transaction history remains private.</p>
+                        <div class="code-snippet">
+                            <div class="code-header">
+                                <span class="code-lang">bash</span>
+                            </div>
+                            <pre><code>zcash-bridge swap \\
+  --input-token "private-token-mint" \\
+  --output-token "solana-asset-mint" \\
+  --amount 1.0 \\
+  --slippage 0.01</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Proof Section -->
+    <section class="proof-section" id="proof">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">// proof</span>
+                <h2 class="section-title">Proof of Concept</h2>
+            </div>
+            <div class="proof-grid">
+                <div class="proof-card">
+                    <div class="proof-icon">🔒</div>
+                    <h3>Zero-Knowledge Privacy</h3>
+                    <p>All transactions use zk-SNARKs to prove validity without revealing sender, receiver, or amount.</p>
+                    <div class="proof-code">
+                        <pre><code>$ zcash-bridge show-proof --txid abc123
+Proof {
+    public_inputs: [amount_hash, recipient_hash],
+    private_inputs: [sender_key, amount, memo],
+    verification_key: VK
+}</code></pre>
+                    </div>
+                </div>
+                <div class="proof-card">
+                    <div class="proof-icon">⚡</div>
+                    <h3>Solana Integration</h3>
+                    <p>Native SPL token support with program verification. Fast, cheap, and composable.</p>
+                    <div class="proof-code">
+                        <pre><code>$ solana program invoke BRIDGE_PROGRAM_ID \\
+  --instruction verify_and_mint \\
+  --accounts bridge_account,mint,user \\
+  --data zk_proof_bytes</code></pre>
+                    </div>
+                </div>
+                <div class="proof-card">
+                    <div class="proof-icon">🔗</div>
+                    <h3>Trustless Bridge</h3>
+                    <p>No custodial risk. Smart contracts verify proofs on-chain. You maintain full control.</p>
+                    <div class="proof-code">
+                        <pre><code>$ zcash-bridge verify \\
+  --proof proof.json \\
+  --public-inputs inputs.json \\
+  --verification-key vk.bin
+
+✓ Proof verified successfully</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Examples Section -->
+    <section class="code-examples" id="docs">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">// examples</span>
+                <h2 class="section-title">Command Line Examples</h2>
+            </div>
+            <div class="examples-content">
+                <div class="tab-content active" id="bash">
+                    <div class="code-block-large">
+                        <div class="code-header">
+                            <span class="code-lang">bash</span>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <pre><code># Initialize bridge connection
+$ zcash-bridge --init
+
+# Check connection status
+$ zcash-bridge status
+✓ Connected to Zcash network
+✓ Connected to Solana network
+
+# Deposit ZEC to pool
+$ zcash-cli sendtoaddress "zt1..." 1.0 --memo "solana-bridge"
+
+# Generate zero-knowledge proof
+$ zcash-bridge generate-proof \
+  --txid "abc123..." \
+  --amount 1.0 \
+  --recipient "solana-address" \
+  --output proof.json
+
+# Verify and mint on Solana
+$ zcash-bridge verify-and-mint \
+  --proof-file proof.json \
+  --amount 1.0 \
+  --recipient "solana-address"
+
+# Check transaction status
+$ zcash-bridge check --txid "abc123..."
+✓ Transaction confirmed
+✓ Proof verified
+✓ Minted on Solana
+
+# Swap bridged tokens
+$ zcash-bridge swap \
+  --input-token "private-token-mint" \
+  --output-token "solana-asset-mint" \
+  --amount 1.0 \
+  --slippage 0.01
+
+# Check pool integrity
+$ zcash-bridge check-pool
+✓ Pool balance: 100.5 ZEC
+✓ All transactions verified
+✓ Chain synchronization OK</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Transaction Checker Section -->
+    <section class="checker-section" id="checker">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">// checker</span>
+                <h2 class="section-title">Transaction Checker</h2>
+            </div>
+            <div class="checker-container">
+                <div class="checker-form">
+                    <div class="form-group">
+                        <label>Transaction ID / Signature</label>
+                        <div class="input-group">
+                            <input type="text" id="check-txid" placeholder="Enter Zcash TXID or Solana signature">
+                            <button class="btn-primary" id="check-tx-btn">Check</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Or check pool integrity</label>
+                        <button class="btn-secondary btn-large" id="check-pool-btn">Check Pool Integrity</button>
+                    </div>
+                    <div id="checker-results" class="checker-results"></div>
+                </div>
+                <div class="checker-info">
+                    <h3>What gets checked?</h3>
+                    <ul class="check-list">
+                        <li>✓ Transaction exists on chain</li>
+                        <li>✓ Transaction confirmations</li>
+                        <li>✓ Proof validity and structure</li>
+                        <li>✓ Amount consistency</li>
+                        <li>✓ Recipient matching</li>
+                        <li>✓ Pool balance integrity</li>
+                        <li>✓ Chain synchronization</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Wallet Portfolio Modal -->
+    <div id="wallet-modal" class="wallet-modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Wallet Portfolio</h2>
+                <button class="modal-close" id="modal-close">×</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Content will be dynamically loaded -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bridge Interface Section -->
+    <section class="bridge-interface-section" id="bridge-interface">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">// bridge</span>
+                <h2 class="section-title">Cross-Chain Bridge</h2>
+            </div>
+            <div class="bridge-container">
+                <div class="bridge-form">
+                    <div class="form-group">
+                        <label>From: Zcash</label>
+                        <div class="input-group">
+                            <input type="number" id="zcash-amount" placeholder="0.0" step="0.00000001" min="0">
+                            <span class="input-suffix">ZEC</span>
+                        </div>
+                        <div class="balance-info">
+                            <span>Zcash Balance: </span>
+                            <span id="zcash-balance">0.0 ZEC</span>
+                        </div>
+                    </div>
+                    <div class="bridge-arrow">↓</div>
+                    <div class="form-group">
+                        <label>To: Solana</label>
+                        <div class="input-group">
+                            <input type="text" id="solana-recipient" placeholder="Enter Solana address or use connected wallet">
+                            <button class="btn-small" id="use-wallet-btn" style="display:none;">Use Wallet</button>
+                        </div>
+                        <div class="balance-info">
+                            <span>Solana Balance: </span>
+                            <span id="solana-balance-display">0.0 SOL</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary btn-large" id="execute-bridge-btn" disabled>Bridge ZEC → SOL</button>
+                    <div id="bridge-status" class="bridge-status"></div>
+                </div>
+                <div class="transaction-history">
+                    <h3>Recent Transactions</h3>
+                    <div id="transaction-list" class="transaction-list">
+                        <div class="transaction-item empty">No transactions yet</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mini Game Section -->
+    <section class="game-section" id="game">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">// game</span>
+                <h2 class="section-title">Mini Game - Pay to Play</h2>
+                <p style="color: var(--text-secondary); margin-top: 1rem;">
+                    Click targets to score points! Costs 0.01 SOL per game. Payments are used for token buybacks and burns to support the protocol.
+                </p>
+            </div>
+            <div class="game-container">
+                <div class="game-controls">
+                    <div class="game-info">
+                        <div class="info-item">
+                            <span class="info-label">Score:</span>
+                            <span class="info-value" id="game-score">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Lives:</span>
+                            <span class="info-value" id="game-lives">5</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Time:</span>
+                            <span class="info-value" id="game-time">0s</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary btn-large" id="start-game-btn">Pay 0.01 SOL & Start Game</button>
+                    <div id="game-status" class="game-status"></div>
+                </div>
+                <div class="game-area" id="game-area">
+                    <div class="game-start-screen" id="game-start-screen">
+                        <h3>🎮 Mini Game</h3>
+                        <p>Click the button above to pay 0.01 SOL and start playing!</p>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 1rem;">
+                            Click on targets to score points. Clicking background loses 1 life. Miss 5 targets and the game ends!
+                        </p>
+                    </div>
+                </div>
+                <div class="leaderboard-section" id="leaderboard-section" style="margin-top: 2rem;">
+                    <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">🏆 Leaderboard</h3>
+                    <div id="leaderboard-container" class="leaderboard-container">
+                        <p style="color: var(--text-secondary);">Loading leaderboard...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Documentation Section -->
+    <section class="api-section" id="api">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">// api</span>
+                <h2 class="section-title">Protocol API</h2>
+            </div>
+            <div class="api-content">
+                <div class="api-endpoints">
+                    <h3>Available Endpoints</h3>
+                    <div class="endpoint-item">
+                        <code class="endpoint-method">GET</code>
+                        <code class="endpoint-path">api.getStatus()</code>
+                        <p>Get protocol status and pool statistics</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <code class="endpoint-method">POST</code>
+                        <code class="endpoint-path">api.bridgeZecToSolana(amount, recipient)</code>
+                        <p>Bridge ZEC to Solana</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <code class="endpoint-method">GET</code>
+                        <code class="endpoint-path">api.checkTransaction(txid)</code>
+                        <p>Check transaction status</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <code class="endpoint-method">GET</code>
+                        <code class="endpoint-path">api.getPoolIntegrity()</code>
+                        <p>Get pool integrity report</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <code class="endpoint-method">GET</code>
+                        <code class="endpoint-path">api.getRecentTransactions(limit)</code>
+                        <p>Get recent transactions</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <code class="endpoint-method">POST</code>
+                        <code class="endpoint-path">api.sendPayment(amount, recipient, memo)</code>
+                        <p>Send SOL payment (used by games/services)</p>
+                    </div>
+                </div>
+                <div class="api-example">
+                    <h3>Usage Example</h3>
+                    <div class="code-block-large">
+                        <div class="code-header">
+                            <span class="code-lang">javascript</span>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                        <pre><code>// Initialize API
+const api = new ProtocolAPI();
+api.init(bridge);
+
+// Get protocol status
+const status = await api.getStatus();
+console.log(status);
+
+// Bridge ZEC to Solana
+const result = await api.bridgeZecToSolana(1.0, 'recipient-address');
+console.log(result);
+
+// Send payment for game/service
+const payment = await api.sendPayment(
+    0.01, 
+    'Hw87YF66ND8v7yAyJKEJqMvDxZrHAHiHy8qsWghddC2Z',
+    'Game payment'
+);
+console.log(payment);</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">// features</span>
+                <h2 class="section-title">Why Choose Our Protocol</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Complete Privacy</h3>
+                    <p>Zero-knowledge proofs ensure your transactions remain private. No one can trace your activity.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Lightning Fast</h3>
+                    <p>Leverage Solana's high throughput. Bridge and trade in seconds, not minutes.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💰</div>
+                    <h3>Low Fees</h3>
+                    <p>Minimal transaction costs. Pay fractions of a cent, not dollars.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔐</div>
+                    <h3>Non-Custodial</h3>
+                    <p>You control your keys. Smart contracts handle verification. No middlemen.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Composable</h3>
+                    <p>Works with any Solana DeFi protocol. Swap, lend, or provide liquidity seamlessly.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📊</div>
+                    <h3>Transparent</h3>
+                    <p>All code is open source. Verify everything yourself. Trust through transparency.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">ZCASH<span class="accent">→</span>SOL</div>
+                    <p>Private cross-chain payments protocol</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Protocol</h4>
+                        <a href="#protocol">How It Works</a>
+                        <a href="#proof">Proof</a>
+                        <a href="#docs">Documentation</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Resources</h4>
+                        <a href="#">GitHub</a>
+                        <a href="#">Whitepaper</a>
+                        <a href="#">Audit Report</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Community</h4>
+                        <a href="#">Discord</a>
+                        <a href="#">Twitter</a>
+                        <a href="#">Telegram</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2024 ZCash → Solana Protocol. Open source. Built with privacy in mind.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
+    <script>
+        // Make Solana Web3 available globally
+        window.solanaWeb3 = solanaWeb3;
+    </script>
+        <script src="bridge-service.js"></script>
+        <script src="test-suite.js"></script>
+        <script src="api-service.js"></script>
+        <script src="api-test-suite.js"></script>
+        <script src="mini-game.js"></script>
+        <script src="anti-cheat.js"></script>
+        <script src="leaderboard-service.js"></script>
+        <script src="script.js"></script>
+</body>
+</html>
+
