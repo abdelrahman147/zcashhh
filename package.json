@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "set-netlify-env": "node set-netlify-env.js"
+    "set-netlify-env": "node set-netlify-env.js",
+    "serve": "npx http-server -p 3000 -c-1",
+    "dev:full": "concurrently \"npm start\" \"npm run serve\""
   },
   "dependencies": {
     "cors": "^2.8.5",

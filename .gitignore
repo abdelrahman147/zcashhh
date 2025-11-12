@@ -37,3 +37,6 @@ build/
 AppData/
 NTUSER.DAT*
 ntuser.*
+
+# Local Netlify folder
+.netlify
