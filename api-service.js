@@ -261,17 +261,35 @@ class ProtocolAPI {
             }
             
             lamports = Number(lamports);
+            
+            if (typeof lamports !== 'number' || !Number.isInteger(lamports)) {
+                throw new Error(`Invalid lamports type: ${typeof lamports}, value: ${lamports}`);
+            }
 
             const transaction = new this.bridge.SolanaWeb3.Transaction();
             
             try {
+                const SystemProgram = this.bridge.SolanaWeb3.SystemProgram;
+                
+                if (!SystemProgram || !SystemProgram.transfer) {
+                    throw new Error('SystemProgram.transfer not available');
+                }
+                
                 const transferParams = {
                     fromPubkey: senderPubkey,
                     toPubkey: recipientPubkey,
                     lamports: lamports
                 };
                 
-                const transferInstruction = this.bridge.SolanaWeb3.SystemProgram.transfer(transferParams);
+                console.log('Creating transfer instruction with params:', {
+                    fromPubkey: senderPubkey.toString(),
+                    toPubkey: recipientPubkey.toString(),
+                    lamports: lamports,
+                    lamportsType: typeof lamports,
+                    isInteger: Number.isInteger(lamports)
+                });
+                
+                const transferInstruction = SystemProgram.transfer(transferParams);
                 
                 if (!transferInstruction || !transferInstruction.keys) {
                     throw new Error('Transfer instruction creation returned invalid result');
@@ -280,6 +298,7 @@ class ProtocolAPI {
                 transaction.add(transferInstruction);
             } catch (instructionError) {
                 console.error('Transfer instruction creation error:', instructionError);
+                console.error('Error stack:', instructionError.stack);
                 throw new Error(`Failed to create transfer instruction: ${instructionError.message}`);
             }
 
