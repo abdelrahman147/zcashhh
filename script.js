@@ -956,17 +956,27 @@ function initTestSuite() {
     
     
     if (testBtn) {
-        testBtn.addEventListener('click', async () => {
-            const iterations = prompt('How many tests to run? (No limits - enter any number)', '10000');
-            if (iterations && !isNaN(iterations)) {
-                const testCount = parseInt(iterations);
-                if (testCount > 0) {
-                    await runTestsWithUI(testCount, testBtn);
-                } else {
-                    alert('Please enter a valid number greater than 0');
+        testBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Run tests button clicked');
+            try {
+                const iterations = prompt('How many tests to run? (No limits - enter any number)', '10000');
+                if (iterations && !isNaN(iterations)) {
+                    const testCount = parseInt(iterations);
+                    if (testCount > 0) {
+                        await runTestsWithUI(testCount, testBtn);
+                    } else {
+                        alert('Please enter a valid number greater than 0');
+                    }
                 }
+            } catch (error) {
+                console.error('Test button error:', error);
+                alert('Error starting tests: ' + error.message);
             }
         });
+    } else {
+        console.error('Run tests button not found!');
     }
     
     
