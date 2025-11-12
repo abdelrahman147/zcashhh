@@ -968,16 +968,34 @@ class ZcashSolanaBridge {
         
         lamports = Number(lamports);
         
+        if (typeof lamports !== 'number' || !Number.isInteger(lamports)) {
+            throw new Error(`Invalid lamports type: ${typeof lamports}, value: ${lamports}`);
+        }
+        
         const transaction = new this.SolanaWeb3.Transaction();
         
         try {
+            const SystemProgram = this.SolanaWeb3.SystemProgram;
+            
+            if (!SystemProgram || !SystemProgram.transfer) {
+                throw new Error('SystemProgram.transfer not available');
+            }
+            
             const transferParams = {
                 fromPubkey: fromPubkey,
                 toPubkey: toPubkey,
                 lamports: lamports
             };
             
-            const transferInstruction = this.SolanaWeb3.SystemProgram.transfer(transferParams);
+            console.log('Creating transfer instruction with params:', {
+                fromPubkey: fromPubkey.toString(),
+                toPubkey: toPubkey.toString(),
+                lamports: lamports,
+                lamportsType: typeof lamports,
+                isInteger: Number.isInteger(lamports)
+            });
+            
+            const transferInstruction = SystemProgram.transfer(transferParams);
             
             if (!transferInstruction || !transferInstruction.keys) {
                 throw new Error('Transfer instruction creation returned invalid result');
@@ -986,6 +1004,7 @@ class ZcashSolanaBridge {
             transaction.add(transferInstruction);
         } catch (instructionError) {
             console.error('Transfer instruction creation error:', instructionError);
+            console.error('Error stack:', instructionError.stack);
             throw new Error(`Failed to create transfer instruction: ${instructionError.message}`);
         }
         
