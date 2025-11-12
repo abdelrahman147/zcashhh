@@ -253,7 +253,8 @@ class ProtocolAPI {
                 throw new Error(`Invalid Solana address: ${error.message}`);
             }
             
-            const lamportsValue = parseFloat(amount) * 1e9;
+            const LAMPORTS_PER_SOL = this.bridge.SolanaWeb3?.LAMPORTS_PER_SOL || 1000000000;
+            const lamportsValue = parseFloat(amount) * LAMPORTS_PER_SOL;
             let lamports = Math.floor(lamportsValue);
             
             if (!Number.isFinite(lamports) || lamports <= 0 || lamports > Number.MAX_SAFE_INTEGER) {
