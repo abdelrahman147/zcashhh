@@ -82,10 +82,10 @@
                         Zero-knowledge privacy. Seamless cross-chain.
                     </p>
                     <div class="hero-actions">
-                        <button class="btn-primary btn-large" id="connect-wallet-btn">Connect Wallet</button>
+                        <button class="btn-primary btn-large" id="connect-wallet-btn" onclick="if(typeof connectWallet==='function'){connectWallet().catch(e=>alert('Error: '+e.message));}else{alert('Please wait for page to load');}">Connect Wallet</button>
                         <button class="btn-secondary btn-large" id="bridge-btn" style="display:none;">Start Bridge</button>
-                        <button class="btn-secondary btn-large" id="view-docs-btn">View Docs</button>
-                        <button class="btn-secondary btn-large" id="run-tests-btn">Run Stress Test</button>
+                        <button class="btn-secondary btn-large" id="view-docs-btn" onclick="document.getElementById('docs')?.scrollIntoView({behavior:'smooth'})">View Docs</button>
+                        <button class="btn-secondary btn-large" id="run-tests-btn" onclick="if(typeof runBridgeTests==='function'){const n=prompt('How many tests?','10000');if(n&&!isNaN(n))runBridgeTests(parseInt(n));}else{alert('Please wait for page to load');}">Run Stress Test</button>
                     </div>
                     <div class="hero-stats" id="pool-stats">
                         <div class="stat">
