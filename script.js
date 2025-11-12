@@ -1,9 +1,16 @@
-
-let bridge = null;
-let api = null;
-let game = null;
-let gameInterval = null;
-let targetTimeout = null;
+(function() {
+    'use strict';
+    
+    try {
+        window.bridge = window.bridge || null;
+        window.api = window.api || null;
+        window.game = window.game || null;
+        
+        var bridge = window.bridge;
+        var api = window.api;
+        var game = window.game;
+        var gameInterval = null;
+        var targetTimeout = null;
 
 
 document.addEventListener('DOMContentLoaded', function() {
