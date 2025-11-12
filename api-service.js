@@ -315,6 +315,12 @@ class ProtocolAPI {
             
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = senderPubkey;
+            
+            try {
+                transaction.serialize({ requireAllSignatures: false, verifySignatures: false });
+            } catch (serializeError) {
+                throw new Error(`Transaction serialization failed: ${serializeError.message}`);
+            }
 
             let signed, signature, confirmation;
             
@@ -324,22 +330,32 @@ class ProtocolAPI {
                 }
                 
                 if (window.solana.signAndSendTransaction) {
-                    const result = await window.solana.signAndSendTransaction({
-                        transaction: transaction,
-                        options: {
-                            skipPreflight: false,
-                            maxRetries: 3
+                    try {
+                        const result = await window.solana.signAndSendTransaction({
+                            transaction: transaction,
+                            options: {
+                                skipPreflight: false,
+                                maxRetries: 3,
+                                preflightCommitment: 'confirmed'
+                            }
+                        });
+                        signature = result.signature;
+                    } catch (signError) {
+                        if (signError.code === 4001) {
+                            throw new Error('Transaction rejected by user');
                         }
-                    });
-                    signature = result.signature;
+                        throw signError;
+                    }
                 } else if (window.solana.signTransaction) {
                     signed = await window.solana.signTransaction(transaction);
                     if (!signed) {
                         throw new Error('Transaction signing returned null');
                     }
-                    signature = await this.bridge.solanaConnection.sendRawTransaction(signed.serialize(), {
+                    const serialized = signed.serialize();
+                    signature = await this.bridge.solanaConnection.sendRawTransaction(serialized, {
                         skipPreflight: false,
-                        maxRetries: 3
+                        maxRetries: 3,
+                        preflightCommitment: 'confirmed'
                     });
                 } else {
                     throw new Error('Phantom wallet signing methods not available');
