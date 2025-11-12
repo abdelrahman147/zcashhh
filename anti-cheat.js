@@ -184,7 +184,7 @@ class AntiCheat {
     
     async reportCheat(type, message) {
         try {
-            await fetch('http:
+            await fetch('http://localhost:3001/api/cheat-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

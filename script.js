@@ -64,7 +64,7 @@
                             'https://solana.public-rpc.com'
                         ],
                         ZCASH_RPC: {
-                            URL: '',
+                            URL: 'https://zec.nownodes.io',
                             USER: '',
                             PASSWORD: ''
                         },
@@ -157,9 +157,9 @@ async function initBridge() {
         
         
         const solanaRpcUrls = CONFIG && CONFIG.SOLANA_RPC ? CONFIG.SOLANA_RPC : [
-            'https:
-            'https:
-            'https:
+            'https://api.mainnet-beta.solana.com',
+            'https://rpc.ankr.com/solana',
+            'https://solana.public-rpc.com'
         ];
         
         try {
@@ -227,6 +227,8 @@ function initBridgeUI() {
         setTimeout(function() { initBridgeUI(); }, 100);
         return;
     }
+    
+    window.initBridgeUI = initBridgeUI;
     
     const connectBtn = document.getElementById('connect-wallet-btn');
     const bridgeBtn = document.getElementById('bridge-btn');

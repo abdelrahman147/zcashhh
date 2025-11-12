@@ -9,8 +9,8 @@ const CONFIG = {
         'https://solana.public-rpc.com'
     ],
     ZCASH_RPC: {
-        URL: '',
-        USER: '',
+        URL: 'https://zec.nownodes.io',
+        USER: 'YOUR_NOWNODES_API_KEY',
         PASSWORD: ''
     }
 };

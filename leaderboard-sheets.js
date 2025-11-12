@@ -2,7 +2,7 @@ class LeaderboardSheets {
     constructor(sheetId, apiKey) {
         this.sheetId = sheetId;
         this.apiKey = apiKey;
-        this.baseUrl = `https:
+        this.baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
     }
     
     async submitScore(wallet, score, time, signature, difficulty = 1) {

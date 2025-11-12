@@ -5,9 +5,9 @@ class ZcashSolanaBridge {
         
         
         this.solanaRpcUrls = config.solanaRpcUrls || [
-            'https:
-            'https:
-            'https:
+            'https://api.mainnet-beta.solana.com',
+            'https://rpc.ankr.com/solana',
+            'https://solana.public-rpc.com'
         ];
         
         this.rpcRequestCounts = {};
@@ -21,7 +21,7 @@ class ZcashSolanaBridge {
         this.poolAddress = config.poolAddress || null;
         
         
-        this.zcashRpcUrl = config.zcashRpcUrl || 'http:
+        this.zcashRpcUrl = config.zcashRpcUrl || '';
         this.zcashRpcUser = config.zcashRpcUser || '';
         this.zcashRpcPassword = config.zcashRpcPassword || '';
         this.shieldedPoolAddress = config.shieldedPoolAddress || null;
@@ -147,7 +147,7 @@ class ZcashSolanaBridge {
             }
             
             const script = document.createElement('script');
-            script.src = 'https:
+            script.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
             script.onload = () => {
                 this.SolanaWeb3 = window.solanaWeb3;
                 resolve();
@@ -230,7 +230,7 @@ class ZcashSolanaBridge {
     
     async getSOLPrice() {
         try {
-            const response = await fetch('https:
+            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
             const data = await response.json();
             return data.solana?.usd || 0;
         } catch (error) {
@@ -407,26 +407,23 @@ class ZcashSolanaBridge {
     }
     
     async zcashRpcCall(method, params = [], retries = 3) {
-        if (!this.zcashRpcUrl) {
-            console.error('Zcash RPC: Endpoint not configured');
-            return null;
-        }
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const isNetlify = window.location.hostname.includes('netlify.app') || window.location.hostname.includes('zecit.online');
+        const proxyUrl = isProduction || isNetlify
+            ? '/api/zcash-rpc'
+            : 'http://localhost:3001/api/zcash-rpc';
         
         for (let attempt = 0; attempt < retries; attempt++) {
             try {
-                
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
                 
-                const response = await fetch(this.zcashRpcUrl, {
+                const response = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Basic ${this.zcashRpcAuth}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        id: 1,
                         method: method,
                         params: params
                     }),
@@ -436,7 +433,8 @@ class ZcashSolanaBridge {
                 clearTimeout(timeoutId);
                 
                 if (!response.ok) {
-                    const errorMsg = `Zcash RPC HTTP ${response.status} ${response.statusText}`;
+                    const errorData = await response.json().catch(() => ({ error: response.statusText }));
+                    const errorMsg = errorData.error || `HTTP ${response.status} ${response.statusText}`;
                     console.error(`Zcash RPC error (attempt ${attempt + 1}/${retries}): ${errorMsg}`);
                     if (attempt < retries - 1) {
                         await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
@@ -447,7 +445,7 @@ class ZcashSolanaBridge {
                 
                 const data = await response.json();
                 if (data.error) {
-                    const errorMsg = `Zcash RPC error: ${data.error.message || JSON.stringify(data.error)}`;
+                    const errorMsg = `Zcash RPC error: ${data.error}`;
                     console.error(`Zcash RPC error (attempt ${attempt + 1}/${retries}): ${errorMsg}`);
                     if (attempt < retries - 1) {
                         await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
@@ -458,7 +456,13 @@ class ZcashSolanaBridge {
                 return data.result;
             } catch (error) {
                 const errorMsg = error.name === 'AbortError' ? 'Request timeout' : error.message;
-                console.error(`Zcash RPC call failed (attempt ${attempt + 1}/${retries}) for ${method}: ${errorMsg}`);
+                
+                if (errorMsg.includes('Failed to fetch') && attempt === 0) {
+                    console.warn('Zcash RPC: Proxy server not running. Start the backend server with: npm start');
+                } else {
+                    console.error(`Zcash RPC call failed (attempt ${attempt + 1}/${retries}) for ${method}: ${errorMsg}`);
+                }
+                
                 if (attempt < retries - 1) {
                     await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
                     continue;

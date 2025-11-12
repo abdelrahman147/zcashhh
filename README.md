@@ -224,7 +224,30 @@ Throws error if:
 - Invalid amount or recipient
 - Transaction rejected or failed
 
-## Configuration
+## Setup
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure Environment
+
+Create `.env` file from `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and add your Nownodes API key:
+```
+ZCASH_RPC_URL=https://zec.nownodes.io
+ZCASH_RPC_USER=your-nownodes-api-key
+PORT=3001
+```
+
+### 3. Configure Frontend
 
 Create `config.js` from `config.example.js`:
 
@@ -246,8 +269,48 @@ const CONFIG = {
 };
 ```
 
+## Running the Application
+
+### Development Setup
+
+1. **Start Backend Proxy Server** (Required for Zcash RPC):
+
+```bash
+npm start
+```
+
+The backend proxy server runs on `http://localhost:3001` and handles Zcash RPC calls to avoid CORS issues.
+
+2. **Start Frontend**:
+
+Use any static file server. For example:
+
+```bash
+npx http-server -p 3000
+```
+
+Or use Python:
+```bash
+python -m http.server 3000
+```
+
+The frontend will be available at `http://localhost:3000`.
+
+### Production Deployment
+
+For production deployment:
+
+1. Deploy `server.js` to your hosting provider (Heroku, Railway, Render, etc.)
+2. Set environment variables:
+   - `ZCASH_RPC_URL=https://zec.nownodes.io`
+   - `ZCASH_RPC_USER=your-nownodes-api-key`
+   - `PORT=3001` (or your provider's port)
+3. Deploy frontend files to your CDN/hosting (Netlify, Vercel, etc.)
+4. The frontend automatically detects production and uses `https://zecit.online/api/zcash-rpc` as the proxy URL
+
 ## Project Structure
 
+- `server.js` - Backend proxy server for Zcash RPC (handles CORS)
 - `bridge-service.js` - Core bridge logic and state management
 - `api-service.js` - Protocol API interface
 - `mini-game.js` - Game implementation with payment integration
@@ -256,6 +319,7 @@ const CONFIG = {
 - `script.js` - Application orchestration
 - `index.html` - User interface
 - `styles.css` - Styling
+- `package.json` - Node.js dependencies
 
 ## Security
 
