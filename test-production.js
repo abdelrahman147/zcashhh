@@ -9,7 +9,7 @@ async function testProduction() {
     
     function test(name, condition, isWarning = false) {
         if (condition) {
-            console.log(`✓ ${name}`);
+            console.log(`PASS: ${name}`);
             results.passed++;
         } else {
             if (isWarning) {
