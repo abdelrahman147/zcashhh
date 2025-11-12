@@ -253,19 +253,22 @@ class ProtocolAPI {
                 throw new Error(`Invalid Solana address: ${error.message}`);
             }
             
-            const lamportsValue = Number(amount) * 1e9;
-            const lamports = Number(Math.round(lamportsValue));
+            const lamportsValue = parseFloat(amount) * 1e9;
+            const lamports = Math.floor(lamportsValue);
             
             if (!Number.isFinite(lamports) || lamports <= 0 || lamports > Number.MAX_SAFE_INTEGER) {
                 throw new Error('Invalid amount: must be a positive number within safe range');
             }
 
             const transaction = new this.bridge.SolanaWeb3.Transaction();
-            const transferInstruction = this.bridge.SolanaWeb3.SystemProgram.transfer({
+            
+            const transferParams = {
                 fromPubkey: senderPubkey,
                 toPubkey: recipientPubkey,
-                lamports: Number(lamports)
-            });
+                lamports: lamports
+            };
+            
+            const transferInstruction = this.bridge.SolanaWeb3.SystemProgram.transfer(transferParams);
             transaction.add(transferInstruction);
 
             if (memo && memo.trim()) {
