@@ -269,9 +269,16 @@ class ProtocolAPI {
             if (memo && memo.trim()) {
                 const memoProgram = new this.bridge.SolanaWeb3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
                 let memoData;
-                if (typeof Buffer !== 'undefined' && Buffer.from) {
-                    memoData = Buffer.from(memo, 'utf8');
-                } else {
+                try {
+                    if (typeof Buffer !== 'undefined' && typeof Buffer.from === 'function') {
+                        memoData = Buffer.from(memo, 'utf8');
+                    } else if (typeof window !== 'undefined' && typeof window.Buffer !== 'undefined' && typeof window.Buffer.from === 'function') {
+                        memoData = window.Buffer.from(memo, 'utf8');
+                    } else {
+                        const encoder = new TextEncoder();
+                        memoData = encoder.encode(memo);
+                    }
+                } catch (e) {
                     const encoder = new TextEncoder();
                     memoData = encoder.encode(memo);
                 }

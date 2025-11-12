@@ -621,25 +621,74 @@ const transactions = await api.getRecentTransactions(10);</code></pre>
         </div>
     </footer>
 
-    <script src="https://unpkg.com/buffer@6.0.3/index.js"></script>
     <script>
         (function() {
             if (typeof global === 'undefined') {
                 window.global = window;
             }
-            if (typeof Buffer !== 'undefined') {
-                window.Buffer = Buffer;
-                window.global.Buffer = Buffer;
+            
+            if (typeof Buffer === 'undefined') {
+                window.Buffer = {
+                    from: function(data, encoding) {
+                        if (typeof data === 'string') {
+                            const encoder = new TextEncoder();
+                            const uint8Array = encoder.encode(data);
+                            const buffer = new Uint8Array(uint8Array.length);
+                            buffer.set(uint8Array);
+                            return buffer;
+                        }
+                        if (data instanceof ArrayBuffer) {
+                            return new Uint8Array(data);
+                        }
+                        if (data instanceof Uint8Array) {
+                            return data;
+                        }
+                        if (Array.isArray(data)) {
+                            return new Uint8Array(data);
+                        }
+                        return new Uint8Array(0);
+                    },
+                    isBuffer: function(obj) {
+                        return obj instanceof Uint8Array || (obj && obj.constructor && obj.constructor.name === 'Buffer');
+                    },
+                    alloc: function(size, fill) {
+                        const buffer = new Uint8Array(size);
+                        if (fill !== undefined) {
+                            buffer.fill(fill);
+                        }
+                        return buffer;
+                    },
+                    concat: function(arrays, totalLength) {
+                        if (!Array.isArray(arrays)) {
+                            throw new TypeError('First argument must be an array');
+                        }
+                        const length = totalLength !== undefined ? totalLength : arrays.reduce((sum, arr) => sum + arr.length, 0);
+                        const result = new Uint8Array(length);
+                        let offset = 0;
+                        for (const arr of arrays) {
+                            const uint8Arr = arr instanceof Uint8Array ? arr : new Uint8Array(arr);
+                            result.set(uint8Arr, offset);
+                            offset += uint8Arr.length;
+                        }
+                        return result;
+                    },
+                    allocUnsafe: function(size) {
+                        return new Uint8Array(size);
+                    }
+                };
+                
+                window.Buffer.prototype = Uint8Array.prototype;
+                window.global.Buffer = window.Buffer;
             }
         })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
     <script>
         window.solanaWeb3 = solanaWeb3;
-        if (typeof Buffer !== 'undefined') {
-            window.Buffer = Buffer;
+        if (typeof Buffer === 'undefined' && typeof window.Buffer !== 'undefined') {
+            window.Buffer = window.Buffer;
             if (typeof global !== 'undefined') {
-                global.Buffer = Buffer;
+                global.Buffer = window.Buffer;
             }
         }
     </script>
