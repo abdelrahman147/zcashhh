@@ -260,18 +260,26 @@ class ProtocolAPI {
                 throw new Error('Invalid amount: must be a positive number within safe range');
             }
             
-            lamports = parseInt(lamports.toString(), 10);
+            lamports = Number(lamports);
 
             const transaction = new this.bridge.SolanaWeb3.Transaction();
             
             try {
-                const transferInstruction = this.bridge.SolanaWeb3.SystemProgram.transfer({
+                const transferParams = {
                     fromPubkey: senderPubkey,
                     toPubkey: recipientPubkey,
                     lamports: lamports
-                });
+                };
+                
+                const transferInstruction = this.bridge.SolanaWeb3.SystemProgram.transfer(transferParams);
+                
+                if (!transferInstruction || !transferInstruction.keys) {
+                    throw new Error('Transfer instruction creation returned invalid result');
+                }
+                
                 transaction.add(transferInstruction);
             } catch (instructionError) {
+                console.error('Transfer instruction creation error:', instructionError);
                 throw new Error(`Failed to create transfer instruction: ${instructionError.message}`);
             }
 

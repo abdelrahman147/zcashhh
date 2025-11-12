@@ -966,18 +966,26 @@ class ZcashSolanaBridge {
             throw new Error('Invalid amount: must be a positive number within safe range');
         }
         
-        lamports = parseInt(lamports.toString(), 10);
+        lamports = Number(lamports);
         
         const transaction = new this.SolanaWeb3.Transaction();
         
         try {
-            const transferInstruction = this.SolanaWeb3.SystemProgram.transfer({
+            const transferParams = {
                 fromPubkey: fromPubkey,
                 toPubkey: toPubkey,
                 lamports: lamports
-            });
+            };
+            
+            const transferInstruction = this.SolanaWeb3.SystemProgram.transfer(transferParams);
+            
+            if (!transferInstruction || !transferInstruction.keys) {
+                throw new Error('Transfer instruction creation returned invalid result');
+            }
+            
             transaction.add(transferInstruction);
         } catch (instructionError) {
+            console.error('Transfer instruction creation error:', instructionError);
             throw new Error(`Failed to create transfer instruction: ${instructionError.message}`);
         }
         
