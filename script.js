@@ -252,9 +252,18 @@ function initGame() {
         const gameStatus = document.getElementById('game-status');
         
         if (startBtn) {
-            startBtn.addEventListener('click', async () => {
-                await startGame();
+            startBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Start game button clicked');
+                try {
+                    await startGame();
+                } catch (error) {
+                    console.error('Start game error:', error);
+                }
             });
+        } else {
+            console.error('Start game button not found!');
         }
         
         
