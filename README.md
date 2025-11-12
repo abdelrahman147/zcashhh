@@ -296,17 +296,28 @@ python -m http.server 3000
 
 The frontend will be available at `http://localhost:3000`.
 
-### Production Deployment
+### Production Deployment (Netlify)
 
-For production deployment:
+The project is configured for Netlify auto-deployment:
+
+1. **Connect GitHub repository** to Netlify
+2. **Set environment variables** in Netlify dashboard:
+   - `ZCASH_RPC_URL=https://zec.nownodes.io`
+   - `ZCASH_RPC_USER=your-nownodes-api-key`
+3. **Deploy** - Netlify will automatically deploy on every push to GitHub
+
+The Zcash RPC proxy runs as a Netlify Function at `/api/zcash-rpc`.
+
+### Alternative: Standalone Backend
+
+For other hosting providers:
 
 1. Deploy `server.js` to your hosting provider (Heroku, Railway, Render, etc.)
 2. Set environment variables:
    - `ZCASH_RPC_URL=https://zec.nownodes.io`
    - `ZCASH_RPC_USER=your-nownodes-api-key`
    - `PORT=3001` (or your provider's port)
-3. Deploy frontend files to your CDN/hosting (Netlify, Vercel, etc.)
-4. The frontend automatically detects production and uses `https://zecit.online/api/zcash-rpc` as the proxy URL
+3. Update `bridge-service.js` to use your backend URL
 
 ## Project Structure
 
