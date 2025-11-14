@@ -26,3 +26,4 @@ for (const [file, {search, replace}] of Object.entries(files)) {
     }
 }
 
+

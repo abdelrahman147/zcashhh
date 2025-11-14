@@ -4,10 +4,23 @@ class ZcashSolanaBridge {
     constructor(config = {}) {
         
         
+        // ALL RPC ENDPOINTS - Premium endpoints first, then fallbacks
         this.solanaRpcUrls = config.solanaRpcUrls || [
+            // PREMIUM ENDPOINTS (with API keys) - Try these first
+            'https://solana-mainnet.g.alchemy.com/v2/xXPi6FAKVWJqv9Ie5TgvOHQgTlrlfbp5', // Alchemy (your API key)
+            'https://solana-mainnet.infura.io/v3/99ccf21fb60b46f994ba7af18b8fdc23', // Infura (your API key)
+            // Official Solana RPCs
             'https://api.mainnet-beta.solana.com',
+            'https://solana-api.projectserum.com',
+            // Public RPCs
             'https://rpc.ankr.com/solana',
-            'https://solana.public-rpc.com'
+            'https://solana.public-rpc.com',
+            // Additional providers
+            'https://solana-mainnet.quicknode.com',
+            'https://mainnet.helius-rpc.com',
+            'https://solana-mainnet.g.alchemy.com/v2/demo', // Alchemy demo (fallback)
+            'https://solana-mainnet-rpc.allthatnode.com',
+            'https://ssc-dao.genesysgo.net',
         ];
         
         this.rpcRequestCounts = {};
@@ -245,12 +258,20 @@ class ZcashSolanaBridge {
             return;
         }
         
+        // PRIORITIZE PREMIUM ENDPOINTS - Try Alchemy FIRST, then Infura, then others
+        const alchemyUrls = this.solanaRpcUrls.filter(url => url.includes('alchemy'));
+        const infuraUrls = this.solanaRpcUrls.filter(url => url.includes('infura'));
+        const otherUrls = this.solanaRpcUrls.filter(url => 
+            !url.includes('alchemy') && !url.includes('infura')
+        );
         
+        // Try Alchemy first (most reliable), then Infura, then others
+        const prioritizedUrls = [...alchemyUrls, ...infuraUrls, ...otherUrls];
         
-        const shuffledUrls = [...this.solanaRpcUrls].sort(() => Math.random() - 0.5);
+        console.log(`🔗 Solana RPC: Trying ${prioritizedUrls.length} endpoints (Alchemy first: ${alchemyUrls.length})`);
         
-        for (let i = 0; i < shuffledUrls.length; i++) {
-            const rpcUrl = shuffledUrls[i];
+        for (let i = 0; i < prioritizedUrls.length; i++) {
+            const rpcUrl = prioritizedUrls[i];
             
             
             if (this.isRateLimited(rpcUrl)) {
@@ -268,33 +289,61 @@ class ZcashSolanaBridge {
                 this.currentRpcIndex = this.solanaRpcUrls.indexOf(rpcUrl);
                 
                 
+                // Longer timeout for premium endpoints
+                const timeout = (rpcUrl.includes('alchemy') || rpcUrl.includes('infura')) ? 15000 : 10000;
                 const slot = await Promise.race([
                     this.solanaConnection.getSlot(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
                 ]);
                 
                 if (slot && slot > 0) {
-                    console.log(`Solana RPC: Connected to ${rpcUrl} (slot: ${slot})`);
+                    const displayUrl = rpcUrl.length > 60 ? rpcUrl.substring(0, 60) + '...' : rpcUrl;
+                    console.log(`✅ Solana RPC: Connected to ${displayUrl} (slot: ${slot})`);
                     this.recordRpcRequest(rpcUrl);
+                    this.solanaRpcUrl = rpcUrl;
+                    this.currentRpcIndex = this.solanaRpcUrls.indexOf(rpcUrl);
                     return;
                 }
             } catch (error) {
                 const errorMsg = error.message || error.toString();
-                console.error(`Solana RPC: Failed to connect to ${rpcUrl}: ${errorMsg}`);
-                this.solanaConnection = null;
+                const displayUrl = rpcUrl.length > 60 ? rpcUrl.substring(0, 60) + '...' : rpcUrl;
                 
-                
-                if (errorMsg.includes('403') || errorMsg.includes('forbidden') || errorMsg.includes('rate limit')) {
-                    this.markRateLimited(rpcUrl);
+                // Don't mark premium endpoints as rate limited on first failure
+                if (!rpcUrl.includes('alchemy') && !rpcUrl.includes('infura')) {
+                    if (errorMsg.includes('403') || errorMsg.includes('forbidden') || errorMsg.includes('rate limit')) {
+                        this.markRateLimited(rpcUrl);
+                    }
                 }
                 
-                
+                console.warn(`⚠️ Solana RPC: Failed to connect to ${displayUrl}: ${errorMsg.substring(0, 100)}`);
+                this.solanaConnection = null;
                 continue;
             }
         }
         
-        console.error('Solana RPC: All endpoints failed. Will retry on next request.');
-        this.solanaConnection = null;
+        console.error('Solana RPC: All endpoints failed during initialization.');
+        
+        // Try to use premium endpoints as fallback (they might work even if test failed)
+        const premiumFallback = this.solanaRpcUrls.find(url => url.includes('alchemy') || url.includes('infura'));
+        const fallbackUrl = premiumFallback || (this.solanaRpcUrls && this.solanaRpcUrls[0]);
+        
+        if (fallbackUrl) {
+            try {
+                await this.loadSolanaWeb3();
+                this.solanaConnection = new this.SolanaWeb3.Connection(fallbackUrl, {
+                    commitment: 'confirmed',
+                    disableRetryOnRateLimit: false
+                });
+                this.solanaRpcUrl = fallbackUrl;
+                const displayUrl = fallbackUrl.length > 60 ? fallbackUrl.substring(0, 60) + '...' : fallbackUrl;
+                console.warn(`⚠️ Using fallback connection to ${displayUrl} (connection may be slow)`);
+            } catch (fallbackError) {
+                console.error('Fallback connection also failed:', fallbackError.message);
+                this.solanaConnection = null;
+            }
+        } else {
+            this.solanaConnection = null;
+        }
     }
     
     isRateLimited(rpcUrl) {
@@ -407,11 +456,8 @@ class ZcashSolanaBridge {
     }
     
     async zcashRpcCall(method, params = [], retries = 3) {
-        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const isNetlify = window.location.hostname.includes('netlify.app') || window.location.hostname.includes('zecit.online');
-        const proxyUrl = isProduction || isNetlify
-            ? '/api/zcash-rpc'
-            : 'http://localhost:3001/api/zcash-rpc';
+        // Always use same origin - backend serves both API and static files
+        const proxyUrl = '/api/zcash-rpc';
         
         for (let attempt = 0; attempt < retries; attempt++) {
             try {

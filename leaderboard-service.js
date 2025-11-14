@@ -1,8 +1,9 @@
 
 
 class LeaderboardService {
-    constructor(apiUrl = 'http:
-        this.apiUrl = apiUrl;
+    constructor(apiUrl = null) {
+        // Always use same origin - backend serves both API and static files
+        this.apiUrl = apiUrl || window.location.origin;
         this.isOnline = false;
         this.checkConnection();
     }
@@ -32,12 +33,13 @@ class LeaderboardService {
     
     
     async submitScore(wallet, score, time, signature, difficulty = 1) {
-        if (!this.isOnline) {
-            await this.checkConnection();
-        }
+        console.log(`📤 Attempting to submit score: ${score} points for wallet ${wallet.substring(0, 8)}...`);
         
+        // Always try to submit, even if we think we're offline
         try {
             const hash = await this.generateScoreHash(wallet, score, time, signature);
+            
+            console.log(`📤 Submitting to: ${this.apiUrl}/api/leaderboard/submit`);
             
             const response = await fetch(`${this.apiUrl}/api/leaderboard/submit`, {
                 method: 'POST',
@@ -54,17 +56,32 @@ class LeaderboardService {
                 })
             });
             
+            console.log(`📥 Response status: ${response.status} ${response.statusText}`);
+            
             if (!response.ok) {
-                throw new Error(`Failed to submit score: ${response.statusText}`);
+                const errorText = await response.text().catch(() => 'Unknown error');
+                console.error(`❌ Score submission failed: ${response.status} - ${errorText}`);
+                throw new Error(`Failed to submit score: ${response.status} ${response.statusText}`);
             }
             
             const result = await response.json();
+            console.log(`✅ Score submitted successfully:`, result);
+            this.isOnline = true; // Mark as online on success
             return result;
         } catch (error) {
-            console.error('Failed to submit score:', error);
+            console.error('❌ Failed to submit score:', error);
+            console.error('   Error details:', error.message, error.stack);
             
+            // Cache locally as backup
             this.cacheScoreLocally(wallet, score, time);
-            throw error;
+            this.isOnline = false;
+            
+            // Don't throw - return error result so UI can handle it
+            return { 
+                success: false, 
+                error: error.message,
+                cached: true 
+            };
         }
     }
     
@@ -125,4 +142,5 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = LeaderboardService;
 }
+
 

@@ -3,9 +3,14 @@ class LeaderboardSheets {
         this.sheetId = sheetId;
         this.apiKey = apiKey;
         this.baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+        this.retryCount = 0;
+        this.maxRetries = 3;
     }
     
     async submitScore(wallet, score, time, signature, difficulty = 1) {
+        console.log(`📊 [Google Sheets] Submitting score: ${score} points for wallet ${wallet.substring(0, 8)}...`);
+        console.log(`   Sheet ID: ${this.sheetId}`);
+        
         try {
             const timestamp = new Date().toISOString();
             const scorePerSecond = time > 0 ? (score / (time / 1000)).toFixed(2) : 0;
@@ -24,6 +29,8 @@ class LeaderboardSheets {
             
             const url = `${this.baseUrl}/values/Sheet1!A:H:append?valueInputOption=RAW&key=${this.apiKey}`;
             
+            console.log(`📤 [Google Sheets] Sending to: ${url.substring(0, 80)}...`);
+            
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -34,20 +41,28 @@ class LeaderboardSheets {
                 })
             });
             
+            console.log(`📥 [Google Sheets] Response status: ${response.status} ${response.statusText}`);
+            
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                console.error(`❌ [Google Sheets] Error:`, errorData);
+                
                 if (response.status === 429 && this.retryCount < this.maxRetries) {
                     this.retryCount++;
+                    console.log(`⏳ [Google Sheets] Rate limited, retrying in ${1000 * this.retryCount}ms...`);
                     await new Promise(resolve => setTimeout(resolve, 1000 * this.retryCount));
                     return this.submitScore(wallet, score, time, signature, difficulty);
                 }
                 throw new Error(`Failed to submit score: ${response.statusText} - ${JSON.stringify(errorData)}`);
             }
             
+            const result = await response.json().catch(() => ({}));
+            console.log(`✅ [Google Sheets] Score saved successfully!`, result);
             this.retryCount = 0;
-            return { success: true };
+            return { success: true, result: result };
         } catch (error) {
-            console.error('Failed to submit score to Google Sheets:', error);
+            console.error('❌ [Google Sheets] Failed to submit score:', error);
+            console.error('   Error details:', error.message, error.stack);
             return { success: false, error: error.message };
         }
     }

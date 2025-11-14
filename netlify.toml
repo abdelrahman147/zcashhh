@@ -10,3 +10,24 @@
   to = "/.netlify/functions/zcash-rpc"
   status = 200
 
+[[redirects]]
+  from = "/api/leaderboard/submit"
+  to = "/.netlify/functions/leaderboard-submit"
+  status = 200
+
+[[redirects]]
+  from = "/api/leaderboard/*"
+  to = "/.netlify/functions/leaderboard"
+  status = 200
+
+[[redirects]]
+  from = "/api/proxy/coingecko/*"
+  to = "/.netlify/functions/coingecko-proxy"
+  status = 200
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/leaderboard"
+  status = 200
+
+
