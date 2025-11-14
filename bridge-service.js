@@ -33,6 +33,12 @@ class ZcashSolanaBridge {
         this.bridgeProgramId = config.bridgeProgramId || null;
         this.poolAddress = config.poolAddress || null;
         
+        // RPC switching cooldown to prevent infinite loops
+        this.lastRpcSwitchTime = 0;
+        this.rpcSwitchCooldown = 5000; // 5 seconds between switches
+        this.maxConsecutiveFails = 5; // Stop after 5 consecutive failures
+        this.consecutiveFailures = 0;
+        
         
         this.zcashRpcUrl = config.zcashRpcUrl || '';
         this.zcashRpcUser = config.zcashRpcUser || '';
@@ -302,6 +308,8 @@ class ZcashSolanaBridge {
                     this.recordRpcRequest(rpcUrl);
                     this.solanaRpcUrl = rpcUrl;
                     this.currentRpcIndex = this.solanaRpcUrls.indexOf(rpcUrl);
+                    // Reset failure counter on successful connection
+                    this.consecutiveFailures = 0;
                     return;
                 }
             } catch (error) {
@@ -381,10 +389,24 @@ class ZcashSolanaBridge {
     }
     
     async switchSolanaRpcEndpoint() {
+        // Prevent rapid switching (cooldown period)
+        const now = Date.now();
+        if (now - this.lastRpcSwitchTime < this.rpcSwitchCooldown) {
+            console.warn(`Solana RPC: Cooldown active, skipping switch (${Math.ceil((this.rpcSwitchCooldown - (now - this.lastRpcSwitchTime)) / 1000)}s remaining)`);
+            return;
+        }
         
+        // Check if we've failed too many times
+        this.consecutiveFailures++;
+        if (this.consecutiveFailures >= this.maxConsecutiveFails) {
+            console.error(`Solana RPC: Too many consecutive failures (${this.consecutiveFailures}). Stopping retry attempts.`);
+            return;
+        }
+        
+        this.lastRpcSwitchTime = now;
         this.currentRpcIndex = (this.currentRpcIndex + 1) % this.solanaRpcUrls.length;
         const newRpcUrl = this.solanaRpcUrls[this.currentRpcIndex];
-        console.log(`Solana RPC: Switching to ${newRpcUrl}`);
+        console.log(`Solana RPC: Switching to ${newRpcUrl} (attempt ${this.consecutiveFailures}/${this.maxConsecutiveFails})`);
         await this.initSolanaConnection();
     }
     

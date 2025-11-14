@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const path = require('path');
+const fs = require('fs');
 const { Connection, PublicKey, Keypair, Transaction, TransactionInstruction, SystemProgram, sendAndConfirmTransaction, LAMPORTS_PER_SOL } = require('@solana/web3.js');
 const { StakePoolLayout, depositSol, withdrawSol, findWithdrawAuthorityProgramAddress } = require('@solana/spl-stake-pool');
 const { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID } = require('@solana/spl-token');
@@ -10,6 +11,16 @@ const bs58 = require('bs58');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Load service account credentials for Google Sheets
+let serviceAccount = null;
+const serviceAccountPath = path.join(__dirname, 'gen-lang-client-0795253847-40a86032d27e.json');
+if (fs.existsSync(serviceAccountPath)) {
+    serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    console.log('✅ Service account loaded for Google Sheets');
+} else {
+    console.warn('⚠️ Service account file not found - Google Sheets integration will not work');
+}
 
 app.use(cors({
     origin: '*',
@@ -144,8 +155,8 @@ const JITO_STAKE_POOL = new PublicKey('Jito4APyf642JPZPx3hGc6WWJ8zPKtRbRs4P815Aw
 const JITO_JITOSOL_MINT = new PublicKey('J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn');
 
 // BlazeStake (bSOL) - Solana Foundation endorsed
-const BLAZE_STAKE_POOL = new PublicKey('stkBL96RZkjY5ine4TvPihGqW8UHJfch2cokjAPzV8i');
-const BLAZE_BSOL_MINT = new PublicKey('bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1c');
+const BLAZE_STAKE_POOL = new PublicKey('stk9ApL5HeVAwPLr3TLhDXdZS8ptVu7zp6ov8HFDuMi');
+const BLAZE_BSOL_MINT = new PublicKey('bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1');
 
 let solanaConnection = null;
 let currentRpcIndex = 0;
@@ -1057,11 +1068,170 @@ app.get('/api/leaderboard/user/:wallet', (req, res) => {
     });
 });
 
+// Google Sheets JWT Token Generation
+async function getGoogleSheetsAccessToken() {
+    if (!serviceAccount) {
+        throw new Error('Service account not loaded');
+    }
+
+    const jwtHeader = Buffer.from(JSON.stringify({
+        alg: 'RS256',
+        typ: 'JWT'
+    })).toString('base64url');
+
+    const now = Math.floor(Date.now() / 1000);
+    const jwtClaimSet = {
+        iss: serviceAccount.client_email,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        aud: serviceAccount.token_uri,
+        exp: now + 3600,
+        iat: now
+    };
+
+    const jwtClaimSetEncoded = Buffer.from(JSON.stringify(jwtClaimSet)).toString('base64url');
+    const signatureInput = `${jwtHeader}.${jwtClaimSetEncoded}`;
+
+    // Sign with private key
+    const crypto = require('crypto');
+    const sign = crypto.createSign('RSA-SHA256');
+    sign.update(signatureInput);
+    const signature = sign.sign(serviceAccount.private_key).toString('base64url');
+
+    const jwt = `${signatureInput}.${signature}`;
+
+    // Exchange JWT for access token
+    const response = await fetch(serviceAccount.token_uri, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(`Failed to get access token: ${JSON.stringify(data)}`);
+    }
+
+    return data.access_token;
+}
+
+// Google Sheets API - Read scores
+app.get('/api/sheets/scores', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    try {
+        if (!serviceAccount) {
+            return res.status(500).json({ error: 'Service account not configured' });
+        }
+
+        const sheetId = req.query.sheetId || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8';
+        const accessToken = await getGoogleSheetsAccessToken();
+
+        const response = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A2:H1000`,
+            {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.text();
+            return res.status(response.status).json({ error: `Sheets API error: ${error}` });
+        }
+
+        const data = await response.json();
+        const scores = (data.values || []).map(row => ({
+            timestamp: row[0],
+            wallet: row[1],
+            score: parseInt(row[2]),
+            time: parseInt(row[3]),
+            scorePerSecond: parseFloat(row[4]),
+            difficulty: parseInt(row[5]),
+            signature: row[6],
+            hash: row[7]
+        }));
+
+        res.json({ success: true, scores });
+    } catch (error) {
+        console.error('Error reading Google Sheets:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Google Sheets API - Submit score
+app.post('/api/sheets/submit', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    try {
+        if (!serviceAccount) {
+            return res.status(500).json({ success: false, error: 'Service account not configured' });
+        }
+
+        const { wallet, score, time, signature, difficulty = 1 } = req.body;
+
+        if (!wallet || score === undefined || !time) {
+            return res.status(400).json({ success: false, error: 'Missing required fields' });
+        }
+
+        const sheetId = req.body.sheetId || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8';
+        const accessToken = await getGoogleSheetsAccessToken();
+
+        const timestamp = new Date().toISOString();
+        const scorePerSecond = time > 0 ? (score / (time / 1000)).toFixed(2) : 0;
+        
+        // Generate hash
+        const crypto = require('crypto');
+        const hash = crypto.createHash('sha256')
+            .update(`${wallet}${score}${time}${signature}`)
+            .digest('hex').substring(0, 16);
+
+        const values = [[
+            timestamp,
+            wallet,
+            score.toString(),
+            time.toString(),
+            scorePerSecond,
+            difficulty.toString(),
+            signature || 'game-' + Date.now(),
+            hash
+        ]];
+
+        console.log(`📊 [Google Sheets] Submitting score: ${score} for ${wallet.substring(0, 8)}...`);
+
+        const response = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A:H:append?valueInputOption=RAW`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ values })
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.text();
+            console.error(`❌ [Google Sheets] Error:`, error);
+            return res.status(response.status).json({ success: false, error: `Sheets API error: ${error}` });
+        }
+
+        const result = await response.json();
+        console.log(`✅ [Google Sheets] Score saved successfully!`);
+
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error('❌ Error submitting to Google Sheets:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.json({ status: 'ok', entries: leaderboard.length });
+    res.json({ status: 'ok', entries: leaderboard.length, googleSheets: serviceAccount ? 'configured' : 'not configured' });
 });
 
 app.listen(PORT, () => {

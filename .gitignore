@@ -9,6 +9,10 @@ package-lock.json
 # Configuration files with sensitive data
 config.js
 
+# Google Service Account credentials (never commit these!)
+gen-lang-client-*.json
+*-service-account.json
+
 # IDE
 .vscode/
 .idea/

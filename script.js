@@ -343,31 +343,38 @@ function initGame() {
             console.log('Anti-Cheat system initialized');
         }
         
-        // PRIORITIZE GOOGLE SHEETS - User wants scores saved to Google Sheets!
-        if (typeof LeaderboardSheets !== 'undefined' && typeof CONFIG !== 'undefined') {
+        // PRIORITIZE BACKEND-POWERED GOOGLE SHEETS - User wants scores saved to Google Sheets!
+        // Use backend service account authentication (secure and works for writes)
+        if (typeof LeaderboardBackend !== 'undefined') {
+            leaderboardService = new LeaderboardBackend();
+            console.log('✅ Backend-powered Google Sheets Leaderboard initialized!');
+            console.log(`   📊 ALL game scores will be saved to Google Sheets via backend!`);
+            console.log(`   🎮 Every player who connects wallet and plays will have scores saved!`);
+            console.log(`   🔐 Using secure service account authentication`);
+        }
+        // Fallback to direct API key method (read-only)
+        else if (typeof LeaderboardSheets !== 'undefined' && typeof CONFIG !== 'undefined') {
             const sheetId = CONFIG.GOOGLE_SHEETS.SHEET_ID;
             const apiKey = CONFIG.GOOGLE_SHEETS.API_KEY;
             if (sheetId && apiKey && sheetId !== 'YOUR_GOOGLE_SHEET_ID' && apiKey !== 'YOUR_GOOGLE_SHEETS_API_KEY') {
                 leaderboardService = new LeaderboardSheets(sheetId, apiKey);
-                console.log('✅ Google Sheets Leaderboard initialized!');
-                console.log(`   Sheet ID: ${sheetId}`);
-                console.log(`   📊 ALL game scores will be saved to Google Sheets!`);
-                console.log(`   🎮 Every player who connects wallet and plays will have scores saved!`);
+                console.log('⚠️ Google Sheets Leaderboard initialized (API key - read-only)');
+                console.log(`   Note: API keys can only READ from Google Sheets, not WRITE`);
             } else {
-                console.warn('⚠️ Google Sheets not configured - checking for API fallback...');
-                // Fallback to API-based leaderboard
+                console.warn('⚠️ Google Sheets not configured - checking for other fallback...');
+                // Fallback to in-memory leaderboard
                 if (typeof LeaderboardService !== 'undefined') {
                     leaderboardService = new LeaderboardService();
-                    console.log('✅ Leaderboard API service initialized (fallback)');
+                    console.log('✅ In-memory Leaderboard API service initialized (fallback)');
                 } else {
                     console.warn('⚠️ No leaderboard service available - scores will be saved locally only');
                 }
             }
         } 
-        // Fallback to API-based leaderboard if Google Sheets not available
+        // Fallback to in-memory leaderboard if Google Sheets not available
         else if (typeof LeaderboardService !== 'undefined') {
             leaderboardService = new LeaderboardService();
-            console.log('✅ Leaderboard API service initialized (Google Sheets not available)');
+            console.log('✅ In-memory Leaderboard API service initialized (Google Sheets not available)');
         } else {
             console.warn('⚠️ No leaderboard service available - scores will be saved locally only');
         }

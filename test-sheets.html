@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Google Sheets Connection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .test-section {
+            background: #16213e;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: 1px solid #0f3460;
+        }
+        button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #c23a51;
+        }
+        .log {
+            background: #0f0f1e;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #00ff88; }
+        .error { color: #ff4444; }
+        .warning { color: #ffaa00; }
+        .info { color: #4da6ff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Google Sheets Connection Test</h1>
+    
+    <div class="test-section">
+        <h2>Configuration</h2>
+        <p><strong>Sheet ID:</strong> <span id="sheet-id">Loading...</span></p>
+        <p><strong>API Key:</strong> <span id="api-key">Loading...</span></p>
+    </div>
+
+    <div class="test-section">
+        <h2>Tests</h2>
+        <button onclick="testReadSheet()">📖 Test Read Sheet</button>
+        <button onclick="testWriteScore()">✍️ Test Write Score</button>
+        <button onclick="testFullFlow()">🎮 Test Full Game Flow</button>
+        <button onclick="clearLog()">🧹 Clear Log</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <div id="log" class="log">Ready to test...</div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let logElement = document.getElementById('log');
+        
+        // Display config
+        document.getElementById('sheet-id').textContent = CONFIG.GOOGLE_SHEETS.SHEET_ID;
+        document.getElementById('api-key').textContent = CONFIG.GOOGLE_SHEETS.API_KEY.substring(0, 20) + '...';
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = `[${timestamp}] ${message}`;
+            logElement.appendChild(line);
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            logElement.innerHTML = 'Log cleared...';
+        }
+
+        async function testReadSheet() {
+            log('🔍 Testing read access to Google Sheet...', 'info');
+            
+            const sheetId = CONFIG.GOOGLE_SHEETS.SHEET_ID;
+            const apiKey = CONFIG.GOOGLE_SHEETS.API_KEY;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A1:H10?key=${apiKey}`;
+            
+            log(`📤 URL: ${url.substring(0, 80)}...`, 'info');
+            
+            try {
+                const response = await fetch(url);
+                log(`📥 Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ Error response: ${errorText.substring(0, 500)}`, 'error');
+                    
+                    if (response.status === 403) {
+                        log('⚠️ 403 Forbidden - Possible causes:', 'warning');
+                        log('  1. API key is invalid or expired', 'warning');
+                        log('  2. Google Sheets API is not enabled', 'warning');
+                        log('  3. Sheet is not shared publicly', 'warning');
+                    } else if (response.status === 404) {
+                        log('⚠️ 404 Not Found - Sheet ID might be incorrect', 'warning');
+                    }
+                    return;
+                }
+                
+                const data = await response.json();
+                log(`✅ Successfully read ${data.values ? data.values.length : 0} rows!`, 'success');
+                
+                if (data.values && data.values.length > 0) {
+                    log(`📊 First row: ${JSON.stringify(data.values[0])}`, 'info');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                log(`   ${error.stack}`, 'error');
+            }
+        }
+
+        async function testWriteScore() {
+            log('✍️ Testing write access to Google Sheet...', 'info');
+            
+            const sheetId = CONFIG.GOOGLE_SHEETS.SHEET_ID;
+            const apiKey = CONFIG.GOOGLE_SHEETS.API_KEY;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A:H:append?valueInputOption=RAW&key=${apiKey}`;
+            
+            log(`📤 URL: ${url.substring(0, 80)}...`, 'info');
+            
+            const testWallet = 'TEST' + Date.now();
+            const testScore = Math.floor(Math.random() * 1000);
+            const timestamp = new Date().toISOString();
+            
+            const values = [[
+                timestamp,
+                testWallet,
+                testScore.toString(),
+                '5000',
+                (testScore / 5).toFixed(2),
+                '1',
+                'test-signature-' + Date.now(),
+                'test-hash-' + Date.now()
+            ]];
+            
+            log(`📊 Test data: Wallet=${testWallet}, Score=${testScore}`, 'info');
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ values: values })
+                });
+                
+                log(`📥 Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ Error response: ${errorText.substring(0, 500)}`, 'error');
+                    
+                    if (response.status === 403) {
+                        log('⚠️ 403 Forbidden - Sheet might not be editable with this API key', 'warning');
+                        log('   Make sure the sheet is shared as "Anyone with the link can edit"', 'warning');
+                    }
+                    return;
+                }
+                
+                const result = await response.json();
+                log(`✅ Successfully wrote test score!`, 'success');
+                log(`📊 Result: ${JSON.stringify(result)}`, 'success');
+                log(`   Check your Google Sheet to confirm the entry was added`, 'info');
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                log(`   ${error.stack}`, 'error');
+            }
+        }
+
+        async function testFullFlow() {
+            log('🎮 Testing full game score submission flow...', 'info');
+            log('', 'info');
+            
+            // Step 1: Read current scores
+            log('Step 1: Reading current leaderboard...', 'info');
+            await testReadSheet();
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            log('', 'info');
+            
+            // Step 2: Write test score
+            log('Step 2: Submitting test score...', 'info');
+            await testWriteScore();
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            log('', 'info');
+            
+            // Step 3: Read again to verify
+            log('Step 3: Verifying score was added...', 'info');
+            await testReadSheet();
+            
+            log('', 'info');
+            log('✅ Full flow test completed!', 'success');
+        }
+    </script>
+</body>
+</html>
+
