@@ -166,6 +166,13 @@ class LeaderboardBackend {
             return [];
         }
     }
+
+    /**
+     * Get leaderboard (alias for getTopPlayers for compatibility)
+     */
+    async getLeaderboard(limit = 10) {
+        return this.getTopPlayers(limit);
+    }
 }
 
 // Make it available globally
