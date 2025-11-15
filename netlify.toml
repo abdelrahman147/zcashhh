@@ -70,39 +70,3 @@
   to = "/pay.html"
   status = 200
 
-
-
-  to = "/.netlify/functions/crypto-price"
-  status = 200
-
-[[redirects]]
-  from = "/api/oracle/payments"
-  to = "/.netlify/functions/oracle-payments"
-  status = 200
-
-[[redirects]]
-  from = "/api/oracle/payments/*"
-  to = "/.netlify/functions/oracle-payments"
-  status = 200
-
-[[redirects]]
-  from = "/api/oracle/payments/*/verify"
-  to = "/.netlify/functions/oracle-payments"
-  status = 200
-
-[[redirects]]
-  from = "/api/payment-links"
-  to = "/.netlify/functions/payment-links"
-  status = 200
-
-[[redirects]]
-  from = "/api/payment-links/*"
-  to = "/.netlify/functions/payment-links"
-  status = 200
-
-[[redirects]]
-  from = "/pay/*"
-  to = "/pay.html"
-  status = 200
-
-
