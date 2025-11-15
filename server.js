@@ -178,7 +178,7 @@ async function initSolanaConnection() {
                 console.log(`✅ Solana RPC connected: ${rpcUrl} (slot: ${slot})`);
                 return;
             }
-        } catch (error) {
+} catch (error) {
             console.warn(`⚠️ Failed to connect to ${rpcUrl}: ${error.message}`);
             continue;
         }
@@ -448,7 +448,7 @@ async function getStakePoolInfo(poolName) {
         const stakePoolAccount = await solanaConnection.getAccountInfo(pool.pool);
         if (stakePoolAccount) {
             try {
-                const stakePoolData = StakePoolLayout.decode(stakePoolAccount.data);
+        const stakePoolData = StakePoolLayout.decode(stakePoolAccount.data);
                 const totalStaked = Number(stakePoolData.totalLamports) / LAMPORTS_PER_SOL;
                 
                 // Get REAL APY from Marinade/Jito/BlazeStake APIs
@@ -489,7 +489,7 @@ async function getStakePoolInfo(poolName) {
                     console.log(`Using default APY for ${poolName}`);
                 }
                 
-                return {
+        return {
                     totalStaked: totalStaked,
                     totalStakeAccounts: Number(stakePoolData.validatorList) || 0,
                     apy: realAPY,
@@ -1234,11 +1234,812 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', entries: leaderboard.length, googleSheets: serviceAccount ? 'configured' : 'not configured' });
 });
 
+// ========== CRYPTOCOMMERCE PAYMENT API ==========
+
+// Price cache for server.js (3 minute updates)
+const priceCache = new Map();
+const CACHE_DURATION = 3 * 60 * 1000; // 3 minutes
+const updatePromises = new Map();
+
+async function getCachedPriceServer(crypto, fiat) {
+    const key = `${crypto.toLowerCase()}_${fiat.toLowerCase()}`;
+    const cached = priceCache.get(key);
+    
+    if (cached && cached.expiresAt > Date.now()) {
+        console.log(`📦 Using cached price for ${crypto}: $${cached.price}`);
+        return cached;
+    }
+    
+    if (updatePromises.has(key)) {
+        return await updatePromises.get(key);
+    }
+    
+    const updatePromise = fetchPriceFromCoinGeckoServer(crypto, fiat);
+    updatePromises.set(key, updatePromise);
+    
+    try {
+        return await updatePromise;
+    } finally {
+        updatePromises.delete(key);
+    }
+}
+
+async function fetchPriceFromCoinGeckoServer(crypto, fiat) {
+    const coinIdMap = {
+        'sol': 'solana',
+        'solana': 'solana',
+        'usdc': 'usd-coin',
+        'usdt': 'tether',
+        'eurc': 'euro-coin',
+        'btc': 'bitcoin',
+        'bitcoin': 'bitcoin',
+        'eth': 'ethereum',
+        'ethereum': 'ethereum'
+    };
+    
+    const coinId = coinIdMap[crypto.toLowerCase()] || crypto.toLowerCase();
+    const fiatLower = fiat.toLowerCase();
+    const key = `${crypto.toLowerCase()}_${fiatLower}`;
+    
+    for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                const coingeckoUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=${fiatLower}`;
+                console.log(`🔍 [Attempt ${attempt}/3] Fetching price from CoinGecko: ${coingeckoUrl}`);
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                
+                const response = await fetch(coingeckoUrl, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'Accept-Language': 'en-US,en;q=0.9'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const price = data[coinId]?.[fiatLower];
+                    if (price && price > 0) {
+                        const cacheEntry = {
+                            price: price,
+                            fetchedAt: Date.now(),
+                            expiresAt: Date.now() + CACHE_DURATION,
+                            source: 'coingecko-direct'
+                        };
+                        priceCache.set(key, cacheEntry);
+                        console.log(`✅ Got real price for ${crypto}: $${price} (cached for 3 minutes)`);
+                        return cacheEntry;
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.warn(`❌ CoinGecko API returned status ${response.status}: ${errorText}`);
+                    if (attempt < 3) {
+                        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                        continue;
+                    }
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.error(`❌ CoinGecko API timeout (attempt ${attempt}/3)`);
+                } else {
+                    console.error(`❌ CoinGecko API failed (attempt ${attempt}/3):`, error.message);
+                }
+                if (attempt < 3) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                    continue;
+                }
+            }
+        }
+        
+        // Try search method
+        try {
+            const searchUrl = `https://api.coingecko.com/api/v3/search?query=${coinId}`;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
+            const searchResponse = await fetch(searchUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (searchResponse.ok) {
+                const searchData = await searchResponse.json();
+                if (searchData.coins && searchData.coins.length > 0) {
+                    const foundCoinId = searchData.coins[0].id;
+                    const priceUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${foundCoinId}&vs_currencies=${fiatLower}`;
+                    
+                    const priceResponse = await fetch(priceUrl, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        },
+                        signal: controller.signal
+                    });
+                    
+                    if (priceResponse.ok) {
+                        const priceData = await priceResponse.json();
+                        const price = priceData[foundCoinId]?.[fiatLower];
+                        if (price && price > 0) {
+                            const cacheEntry = {
+                                price: price,
+                                fetchedAt: Date.now(),
+                                expiresAt: Date.now() + CACHE_DURATION,
+                                source: 'coingecko-search'
+                            };
+                            priceCache.set(key, cacheEntry);
+                            console.log(`✅ Got real price via search for ${crypto}: $${price} (cached for 3 minutes)`);
+                            return cacheEntry;
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('Search method failed:', error.message);
+        }
+        
+        // Use stale cache if available
+        const staleCache = priceCache.get(key);
+        if (staleCache) {
+            console.warn(`⚠️ Using stale cached price for ${crypto}: $${staleCache.price}`);
+            return staleCache;
+        }
+        
+        throw new Error(`Failed to fetch price for ${crypto} after multiple attempts`);
+}
+
+// Get cryptocurrency price - CACHED (updates every 3 minutes)
+app.get('/api/crypto-price', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { crypto, fiat = 'USD' } = req.query;
+        
+        if (!crypto) {
+            return res.status(400).json({ error: 'crypto parameter required' });
+        }
+        
+        // Use cached price (updates every 3 minutes)
+        try {
+            const cached = await getCachedPriceServer(crypto, fiat);
+            return res.json({ 
+                crypto, 
+                fiat, 
+                price: cached.price, 
+                source: cached.source,
+                cached: true,
+                age: Math.round((Date.now() - cached.fetchedAt) / 1000),
+                expiresIn: Math.round((cached.expiresAt - Date.now()) / 1000)
+            });
+        } catch (error) {
+            console.error(`❌ Failed to get price for ${crypto}:`, error.message);
+            return res.status(503).json({ 
+                error: 'Failed to fetch price from CoinGecko after multiple attempts',
+                crypto: crypto,
+                fiat: fiat,
+                details: error.message
+            });
+        }
+        
+    } catch (error) {
+        console.error('Price API error:', error);
+        res.status(500).json({ error: 'Failed to get price', details: error.message });
+    }
+});
+
+// Create payment (store payment request)
+const paymentStore = new Map();
+
+app.post('/api/payments/create', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { amount, currency, crypto, orderId } = req.body;
+        
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ error: 'Invalid amount' });
+        }
+        
+        const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const payment = {
+            id: paymentId,
+            amount: parseFloat(amount),
+            currency: currency || 'USD',
+            crypto: crypto || 'SOL',
+            orderId: orderId || null,
+            status: 'pending',
+            createdAt: Date.now(),
+            expiresAt: Date.now() + (15 * 60 * 1000)
+        };
+        
+        paymentStore.set(paymentId, payment);
+        
+        res.json({ success: true, payment });
+    } catch (error) {
+        console.error('Create payment error:', error);
+        res.status(500).json({ error: 'Failed to create payment' });
+    }
+});
+
+// Get payment status
+app.get('/api/payments/:paymentId', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { paymentId } = req.params;
+        const payment = paymentStore.get(paymentId);
+        
+        if (!payment) {
+            return res.status(404).json({ error: 'Payment not found' });
+        }
+        
+        res.json({ success: true, payment });
+    } catch (error) {
+        console.error('Get payment error:', error);
+        res.status(500).json({ error: 'Failed to get payment' });
+    }
+});
+
+// Webhook endpoint (for payment confirmations)
+app.post('/api/webhooks/payment', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { event, data } = req.body;
+        
+        if (event === 'payment.confirmed') {
+            const payment = paymentStore.get(data.id);
+            if (payment) {
+                payment.status = 'confirmed';
+                payment.transactionHash = data.transactionHash;
+                payment.confirmedAt = data.confirmedAt;
+                paymentStore.set(data.id, payment);
+            }
+        }
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Webhook error:', error);
+        res.status(500).json({ error: 'Webhook processing failed' });
+    }
+});
+
+// ========== MERCHANT API ENDPOINTS ==========
+
+// Store management
+const merchantStores = new Map();
+const merchantProducts = new Map();
+const merchantOrders = new Map();
+const merchantWebhooks = new Map();
+
+app.post('/api/merchant/stores', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const store = {
+            id: `store_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            ...req.body,
+            createdAt: Date.now()
+        };
+        
+        merchantStores.set(store.id, store);
+        res.json({ success: true, store });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/merchant/stores/:storeId', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    const store = merchantStores.get(req.params.storeId);
+    if (!store) {
+        return res.status(404).json({ error: 'Store not found' });
+    }
+    
+    res.json({ success: true, store });
+});
+
+// Product management
+app.post('/api/merchant/products', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const product = {
+            id: `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            ...req.body,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        };
+        
+        merchantProducts.set(product.id, product);
+        res.json({ success: true, product });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/merchant/products', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { storeId, category, inStock } = req.query;
+        let products = Array.from(merchantProducts.values());
+        
+        if (storeId) {
+            products = products.filter(p => p.storeId === storeId);
+        }
+        if (category) {
+            products = products.filter(p => p.category === category);
+        }
+        if (inStock === 'true') {
+            products = products.filter(p => p.inStock);
+        }
+        
+        res.json({ success: true, products });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/merchant/products/:productId', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    const product = merchantProducts.get(req.params.productId);
+    if (!product) {
+        return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    Object.assign(product, req.body, { updatedAt: Date.now() });
+    merchantProducts.set(product.id, product);
+    
+    res.json({ success: true, product });
+});
+
+app.delete('/api/merchant/products/:productId', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    merchantProducts.delete(req.params.productId);
+    res.json({ success: true });
+});
+
+// Order management
+app.get('/api/merchant/orders', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { storeId, status, limit = 100 } = req.query;
+        let orders = Array.from(merchantOrders.values());
+        
+        if (storeId) {
+            orders = orders.filter(o => o.storeId === storeId);
+        }
+        if (status) {
+            orders = orders.filter(o => o.status === status);
+        }
+        
+        orders = orders.sort((a, b) => b.createdAt - a.createdAt).slice(0, parseInt(limit));
+        
+        res.json({ success: true, orders });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/merchant/orders/:orderId', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    const order = merchantOrders.get(req.params.orderId);
+    if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    Object.assign(order, req.body, { updatedAt: Date.now() });
+    merchantOrders.set(order.id, order);
+    
+    // Trigger webhook if configured
+    triggerOrderWebhook(order);
+    
+    res.json({ success: true, order });
+});
+
+// Analytics
+app.get('/api/merchant/analytics', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { storeId, period = '30d' } = req.query;
+        const orders = Array.from(merchantOrders.values()).filter(o => 
+            !storeId || o.storeId === storeId
+        );
+        
+        const periodMs = period === '7d' ? 7 * 24 * 60 * 60 * 1000 :
+                         period === '30d' ? 30 * 24 * 60 * 60 * 1000 :
+                         period === '90d' ? 90 * 24 * 60 * 60 * 1000 :
+                         30 * 24 * 60 * 60 * 1000;
+        
+        const cutoff = Date.now() - periodMs;
+        const recentOrders = orders.filter(o => o.createdAt >= cutoff);
+        
+        const analytics = {
+            totalRevenue: recentOrders
+                .filter(o => o.status === 'completed')
+                .reduce((sum, o) => sum + o.total, 0),
+            totalOrders: recentOrders.length,
+            completedOrders: recentOrders.filter(o => o.status === 'completed').length,
+            pendingOrders: recentOrders.filter(o => o.status === 'pending').length,
+            averageOrderValue: 0,
+            topProducts: getTopProducts(recentOrders),
+            salesByDay: getSalesByDay(recentOrders),
+            paymentMethods: getPaymentMethods(recentOrders)
+        };
+        
+        if (analytics.completedOrders > 0) {
+            analytics.averageOrderValue = analytics.totalRevenue / analytics.completedOrders;
+        }
+        
+        res.json({ success: true, analytics });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+function getTopProducts(orders) {
+    const productCounts = {};
+    orders.forEach(order => {
+        if (order.items) {
+            order.items.forEach(item => {
+                productCounts[item.productId] = (productCounts[item.productId] || 0) + item.quantity;
+            });
+        }
+    });
+    
+    return Object.entries(productCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([productId, count]) => ({
+            productId,
+            sales: count,
+            product: merchantProducts.get(productId)
+        }));
+}
+
+function getSalesByDay(orders) {
+    const salesByDay = {};
+    orders.forEach(order => {
+        if (order.status === 'completed') {
+            const date = new Date(order.createdAt).toISOString().split('T')[0];
+            salesByDay[date] = (salesByDay[date] || 0) + order.total;
+        }
+    });
+    
+    return Object.entries(salesByDay).map(([date, revenue]) => ({ date, revenue }));
+}
+
+function getPaymentMethods(orders) {
+    const methods = {};
+    orders.forEach(order => {
+        const method = order.payment?.crypto || 'unknown';
+        methods[method] = (methods[method] || 0) + 1;
+    });
+    return methods;
+}
+
+// Webhooks
+app.post('/api/merchant/webhooks', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { storeId, url, events } = req.body;
+        const webhook = {
+            id: `webhook_${Date.now()}`,
+            storeId,
+            url,
+            events,
+            createdAt: Date.now()
+        };
+        
+        merchantWebhooks.set(webhook.id, webhook);
+        res.json({ success: true, webhook });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+function triggerOrderWebhook(order) {
+    const webhooks = Array.from(merchantWebhooks.values())
+        .filter(w => w.storeId === order.storeId);
+    
+    webhooks.forEach(webhook => {
+        if (webhook.events.includes(`order.${order.status}`)) {
+            fetch(webhook.url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event: `order.${order.status}`,
+                    data: order,
+                    timestamp: Date.now()
+                })
+            }).catch(err => console.warn('Webhook failed:', err));
+        }
+    });
+}
+
+// ========== SOLANA PAYMENT ORACLE ENDPOINTS ==========
+
+const oraclePayments = new Map();
+
+app.post('/api/oracle/payments', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const payment = req.body;
+        oraclePayments.set(payment.id, payment);
+        res.json({ success: true, payment });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/oracle/payments/:paymentId', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    const payment = oraclePayments.get(req.params.paymentId);
+    if (!payment) {
+        return res.status(404).json({ error: 'Payment not found' });
+    }
+    
+    res.json({ success: true, payment });
+});
+
+app.get('/api/oracle/payments', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    const { status, merchantAddress } = req.query;
+    let payments = Array.from(oraclePayments.values());
+    
+    if (status) {
+        payments = payments.filter(p => p.status === status);
+    }
+    if (merchantAddress) {
+        payments = payments.filter(p => p.merchantAddress === merchantAddress);
+    }
+    
+    payments = payments.sort((a, b) => b.createdAt - a.createdAt);
+    
+    res.json({ success: true, payments });
+});
+
+app.post('/api/oracle/verify', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { transactionHash, expectedAmount } = req.body;
+        
+        if (!transactionHash || !expectedAmount) {
+            return res.status(400).json({ error: 'Transaction hash and expected amount required' });
+        }
+        
+        // Verify transaction via Solana RPC
+        // This would call the Solana node to verify the transaction
+        // For now, return a simulated verification
+        
+        const verification = {
+            verified: true,
+            transactionSignature: transactionHash,
+            amount: expectedAmount,
+            confirmations: 6,
+            proof: {
+                id: `proof_${Date.now()}`,
+                verified: true,
+                timestamp: Date.now()
+            }
+        };
+        
+        res.json({ success: true, verification });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Payment Links
+const paymentLinks = new Map();
+
+app.post('/api/payment-links', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const link = req.body;
+        paymentLinks.set(link.id, link);
+        res.json({ success: true, link });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/payment-links/:linkId', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    const link = paymentLinks.get(req.params.linkId);
+    if (!link) {
+        return res.status(404).json({ error: 'Payment link not found' });
+    }
+    
+    res.json({ success: true, link });
+});
+
+// Webhooks
+const webhooks = new Map();
+
+app.post('/api/webhooks', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const webhook = req.body;
+        webhooks.set(webhook.id, webhook);
+        res.json({ success: true, webhook });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/webhooks', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    const webhookList = Array.from(webhooks.values());
+    res.json({ success: true, webhooks: webhookList });
+});
+
+app.delete('/api/webhooks/:webhookId', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    webhooks.delete(req.params.webhookId);
+    res.json({ success: true });
+});
+
+// Refunds
+app.post('/api/oracle/refunds', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { paymentId, amount, reason } = req.body;
+        
+        // In production, this would process actual refund
+        const refund = {
+            id: `refund_${Date.now()}`,
+            paymentId: paymentId,
+            amount: amount,
+            reason: reason,
+            status: 'processed',
+            createdAt: Date.now()
+        };
+        
+        res.json({ success: true, refund });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Store order when payment is created
+app.post('/api/payments/create', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    try {
+        const { amount, currency, crypto, orderId, cart, shippingAddress, email } = req.body;
+        
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ error: 'Invalid amount' });
+        }
+        
+        const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const payment = {
+            id: paymentId,
+            amount: parseFloat(amount),
+            currency: currency || 'USD',
+            crypto: crypto || 'SOL',
+            orderId: orderId || null,
+            cart: cart || null,
+            shippingAddress: shippingAddress || null,
+            email: email || null,
+            status: 'pending',
+            createdAt: Date.now(),
+            expiresAt: Date.now() + (15 * 60 * 1000)
+        };
+        
+        paymentStore.set(paymentId, payment);
+        
+        // Create order if cart provided
+        if (cart && cart.length > 0) {
+            const order = {
+                id: orderId || `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                storeId: cart[0]?.storeId || 'default',
+                items: cart,
+                subtotal: amount,
+                total: amount,
+                currency: currency || 'USD',
+                payment: {
+                    paymentId: paymentId,
+                    crypto: crypto,
+                    status: 'pending'
+                },
+                shippingAddress: shippingAddress,
+                email: email,
+                status: 'pending',
+                createdAt: Date.now()
+            };
+            
+            merchantOrders.set(order.id, order);
+            payment.orderId = order.id;
+        }
+        
+        res.json({ success: true, payment });
+    } catch (error) {
+        console.error('Create payment error:', error);
+        res.status(500).json({ error: 'Failed to create payment' });
+    }
+});
+
+// Start background price cache updates every 3 minutes
+const updatePriceCache = async () => {
+    const cryptos = ['solana', 'usd-coin', 'tether', 'euro-coin', 'bitcoin', 'ethereum'];
+    console.log(`🔄 Updating price cache for ${cryptos.length} cryptos...`);
+    for (const crypto of cryptos) {
+        try {
+            await getCachedPriceServer(crypto, 'USD');
+        } catch (error) {
+            console.warn(`Failed to update price for ${crypto}:`, error.message);
+        }
+    }
+    console.log(`✅ Price cache update complete`);
+};
+
+// Initial cache update
+updatePriceCache();
+
+// Update every 3 minutes
+setInterval(updatePriceCache, 3 * 60 * 1000);
+
 app.listen(PORT, () => {
     console.log(`Zcash RPC Proxy server running on http://localhost:${PORT}`);
     console.log(`Zcash RPC endpoint: ${ZCASH_RPC_URL}`);
     console.log(`API Key configured: ${ZCASH_RPC_USER ? 'Yes' : 'No'}`);
     console.log(`Solana RPC: ${SOLANA_RPC_URL}`);
+    console.log(`\n=== Price Cache ===`);
+    console.log(`🔄 Auto-updating prices every 3 minutes`);
+    console.log(`📦 Cached cryptos: solana, usd-coin, tether, euro-coin, bitcoin, ethereum`);
     console.log(`\n=== Staking Pools Available ===`);
     Object.entries(STAKE_POOLS).forEach(([key, pool]) => {
         console.log(`${key.toUpperCase()}: ${pool.name} (${pool.apy}% APY)`);
@@ -1254,4 +2055,12 @@ app.listen(PORT, () => {
     console.log(`   - /api/leaderboard (GET)`);
     console.log(`   - /api/leaderboard/user/:wallet (GET)`);
     console.log(`   - /api/health (GET)`);
+    console.log(`   - /api/crypto-price (GET)`);
+    console.log(`   - /api/payments/create (POST)`);
+    console.log(`   - /api/payments/:paymentId (GET)`);
+    console.log(`   - /api/merchant/stores (POST/GET)`);
+    console.log(`   - /api/merchant/products (POST/GET/PUT/DELETE)`);
+    console.log(`   - /api/merchant/orders (GET/PUT)`);
+    console.log(`   - /api/merchant/analytics (GET)`);
+    console.log(`   - /api/merchant/webhooks (POST)`);
 });

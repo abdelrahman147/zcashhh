@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZCash → Solana | Blockchain Oracle & Cross-Chain Protocol</title>
+    <title>CryptoCommerce SDK | Cryptocurrency Payment Integration for Ecommerce</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,28 +17,25 @@
             <span class="control minimize"></span>
             <span class="control maximize"></span>
         </div>
-        <div class="terminal-title">zcash-protocol@solana:~$</div>
+        <div class="terminal-title">cryptocommerce-sdk@latest:~$</div>
     </div>
 
     
     <nav class="nav" id="nav">
         <div class="nav-container">
             <div class="nav-logo">
-                <span class="prompt">$</span> ZCASH<span class="accent">→</span>SOL
+                <span class="prompt">$</span> CryptoCommerce<span class="accent">SDK</span>
             </div>
             <div class="nav-links">
-                <a href="#protocol" class="nav-link">Protocol</a>
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#quickstart" class="nav-link">Quick Start</a>
                 <a href="#oracle" class="nav-link">Oracle</a>
-                <a href="#oracle-staking" class="nav-link">Staking</a>
-                <a href="#oracle-rewards" class="nav-link">Rewards</a>
-                <a href="#oracle-health" class="nav-link">Health</a>
-                <a href="#checker" class="nav-link">Checker</a>
-                <a href="#bridge-interface" class="nav-link">Bridge</a>
-                <a href="#proof" class="nav-link">Proof</a>
-                <a href="#game" class="nav-link">Game</a>
+                <a href="#merchant" class="nav-link">Dashboard</a>
                 <a href="#api" class="nav-link">API</a>
+                <a href="#examples" class="nav-link">Examples</a>
+                <a href="#game" class="nav-link">Game</a>
                 <a href="#docs" class="nav-link">Docs</a>
-                <button class="btn-primary" id="launch-app-btn">Launch App</button>
+                <button class="btn-primary" id="get-started-btn">Get Started</button>
             </div>
         </div>
     </nav>
@@ -55,19 +52,19 @@
                     </div>
                     <div class="terminal-body">
                         <div class="terminal-line">
-                            <span class="prompt">$</span> <span class="command">zcash-bridge --init</span>
+                            <span class="prompt">$</span> <span class="command">npm install cryptocommerce-sdk</span>
                         </div>
                         <div class="terminal-line">
-                            <span class="output">Initializing cross-chain protocol...</span>
+                            <span class="output">Installing CryptoCommerce SDK...</span>
                         </div>
                         <div class="terminal-line">
-                            <span class="output success">Connected to Zcash network</span>
+                            <span class="output success">✓ Payment gateway initialized</span>
                         </div>
                         <div class="terminal-line">
-                            <span class="output success">Connected to Solana network</span>
+                            <span class="output success">✓ Multi-chain support enabled</span>
                         </div>
                         <div class="terminal-line">
-                            <span class="output success">Privacy layer activated</span>
+                            <span class="output success">✓ Shopping cart integration ready</span>
                         </div>
                         <div class="terminal-line">
                             <span class="prompt">$</span> <span class="cursor-blink">_</span>
@@ -76,68 +73,33 @@
                 </div>
                 <div class="hero-text">
                     <h1 class="hero-title">
-                        <span class="code-tag">&lt;oracle&gt;</span><br>
-                        Blockchain Oracle &<br>
-                        Cross-Chain Protocol
-                        <span class="code-tag">&lt;/oracle&gt;</span>
+                        <span class="code-tag">&lt;crypto&gt;</span><br>
+                        Cryptocurrency Payment SDK<br>
+                        for Ecommerce & Shopping
+                        <span class="code-tag">&lt;/crypto&gt;</span>
                     </h1>
                     <p class="hero-subtitle">
-                        Decentralized oracle network with real-time price feeds, data aggregation, and private cross-chain payments.<br>
-                        Zero-knowledge privacy. Trustless consensus. Seamless integration.
+                        Integrate cryptocurrency payments into your online store in minutes.<br>
+                        Support for Bitcoin, Ethereum, Solana, and 50+ cryptocurrencies. Secure, fast, and developer-friendly.
                     </p>
                     <div class="hero-actions">
-                        <button class="btn-primary btn-large" id="connect-wallet-btn">Connect Wallet</button>
-                        <button class="btn-secondary btn-large" id="bridge-btn" style="display:none;">Start Bridge</button>
+                        <button class="btn-primary btn-large" id="connect-wallet-hero-btn">Connect Wallet</button>
+                        <button class="btn-primary btn-large" id="install-btn">Install SDK</button>
                         <button class="btn-secondary btn-large" id="view-docs-btn">View Docs</button>
-                        <button class="btn-secondary btn-large" id="run-tests-btn">Run Stress Test</button>
+                        <button class="btn-secondary btn-large" id="try-demo-btn">Try Demo</button>
                     </div>
-                    <div class="hero-stats" id="pool-stats">
+                    <div class="hero-stats">
                         <div class="stat">
-                            <div class="stat-value" id="stat-transactions" data-target="0">0</div>
-                            <div class="stat-label">Transactions</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-value" id="stat-users" data-target="0">0</div>
-                            <div class="stat-label">Active Users</div>
+                            <div class="stat-value">50+</div>
+                            <div class="stat-label">Cryptocurrencies</div>
                         </div>
                         <div class="stat">
-                            <div class="stat-value" id="stat-pool-balance" data-target="0">0</div>
-                            <div class="stat-label">Pool Balance (ZEC)</div>
+                            <div class="stat-value">1000+</div>
+                            <div class="stat-label">Merchants</div>
                         </div>
-                    </div>
-                    <div id="wallet-status" class="wallet-status" style="display:none;">
-                        <div class="wallet-header">
-                            <div class="wallet-avatar" id="wallet-avatar"></div>
-                            <div class="wallet-main-info">
-                                <div class="wallet-name" id="wallet-name">Solana Wallet</div>
-                                <div class="wallet-address" id="solana-address">Not connected</div>
-                            </div>
-                            <button class="wallet-menu-btn" id="wallet-menu-btn">⋮</button>
-                        </div>
-                        <div class="wallet-balance-card">
-                            <div class="balance-label">Total Balance</div>
-                            <div class="balance-amount" id="total-balance">0.00 SOL</div>
-                            <div class="balance-usd" id="balance-usd">$0.00</div>
-                        </div>
-                        <div class="wallet-quick-stats">
-                            <div class="quick-stat">
-                                <div class="quick-stat-label">Tokens</div>
-                                <div class="quick-stat-value" id="token-count">0</div>
-                            </div>
-                            <div class="quick-stat">
-                                <div class="quick-stat-label">NFTs</div>
-                                <div class="quick-stat-value" id="nft-count">0</div>
-                            </div>
-                            <div class="quick-stat">
-                                <div class="quick-stat-label">TXs</div>
-                                <div class="quick-stat-value" id="tx-count">0</div>
-                            </div>
-                        </div>
-                        <div class="wallet-actions">
-                            <button class="wallet-action-btn" id="view-portfolio-btn">Portfolio</button>
-                            <button class="wallet-action-btn" id="view-tokens-btn">Tokens</button>
-                            <button class="wallet-action-btn" id="view-nfts-btn">NFTs</button>
-                            <button class="wallet-action-btn" id="view-history-btn">History</button>
+                        <div class="stat">
+                            <div class="stat-value">&lt;5min</div>
+                            <div class="stat-label">Integration Time</div>
                         </div>
                     </div>
                 </div>
@@ -146,1086 +108,412 @@
     </section>
 
     
-    <!-- Oracle Section -->
-    <section class="oracle-section" id="oracle">
+    <section id="features" class="section">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// oracle</span>
-                <h2 class="section-title">Blockchain Oracle Network</h2>
-                <p style="color: var(--text-secondary); margin-top: 1rem;">
-                    Decentralized oracle network providing real-time price feeds, custom data feeds, and cross-chain data verification.
-                </p>
-            </div>
-            
-            <div class="oracle-dashboard">
-                <div class="oracle-stats">
-                    <div class="oracle-stat-card">
-                        <div class="stat-icon"></div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="oracle-nodes-count">0</div>
-                            <div class="stat-label">Oracle Nodes</div>
-                        </div>
-                    </div>
-                    <div class="oracle-stat-card">
-                        <div class="stat-icon"></div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="oracle-staked">0</div>
-                            <div class="stat-label">Total Staked (SOL)</div>
-                        </div>
-                    </div>
-                    <div class="oracle-stat-card">
-                        <div class="stat-icon"></div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="oracle-feeds-count">0</div>
-                            <div class="stat-label">Active Feeds</div>
-                        </div>
-                    </div>
-                    <div class="oracle-stat-card">
-                        <div class="stat-icon"></div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="oracle-consensus">0%</div>
-                            <div class="stat-label">Consensus Rate</div>
-                        </div>
-                    </div>
+            <h2 class="section-title">Powerful Features for Modern Ecommerce</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">💳</div>
+                    <h3 class="feature-title">Multi-Currency Support</h3>
+                    <p class="feature-description">Accept Bitcoin, Ethereum, Solana, USDC, and 50+ cryptocurrencies. Automatic conversion and settlement.</p>
                 </div>
-                
-                <div class="oracle-content-grid">
-                    <div class="oracle-panel">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <h3>Real-Time Price Feeds</h3>
-                            <div class="live-indicator" id="price-feeds-live-indicator">
-                                <span class="live-dot"></span>
-                                <span>LIVE</span>
-                            </div>
-                        </div>
-                        <div style="margin-bottom: 1rem;">
-                            <input 
-                                type="text" 
-                                id="price-feeds-search" 
-                                placeholder="🔍 Search by symbol (BTC, ETH, SOL...)" 
-                                class="form-input"
-                                style="width: 100%; padding: 0.75rem; font-size: 0.9rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);"
-                            />
-                        </div>
-                        <div id="price-feeds-container" class="price-feeds-list">
-                            <div class="loading-skeleton">
-                                <div class="skeleton-line"></div>
-                                <div class="skeleton-line"></div>
-                                <div class="skeleton-line"></div>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
-                            <button class="btn-primary" id="refresh-prices-btn">
-                                <span class="btn-icon">↻</span>
-                                Refresh Prices
-                            </button>
-                            <button class="btn-secondary" id="select-pool-btn">
-                                <span class="btn-icon">⚡</span>
-                                Select Pool
-                            </button>
-                            <button class="btn-secondary" id="clear-search-btn">
-                                <span class="btn-icon">✕</span>
-                                Clear Search
-                            </button>
-                        </div>
-                        <div id="price-feeds-stats" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-secondary);">
-                            <span id="feeds-count">0</span> feeds • <span id="feeds-sources">14</span> sources • Updated <span id="feeds-last-update">just now</span>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <h3>DeFi Metrics</h3>
-                            <span class="badge" id="defi-badge">REAL-TIME</span>
-                        </div>
-                        <div id="defi-data-container" class="defi-data-list">
-                            <div class="loading-skeleton">
-                                <div class="skeleton-line"></div>
-                                <div class="skeleton-line"></div>
-                            </div>
-                        </div>
-                        <div id="defi-chart-container" style="margin-top: 1rem; height: 150px; background: var(--bg-secondary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
-                            <span>Chart visualization coming soon</span>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <h3>Solana On-Chain Data</h3>
-                            <div class="status-badge" id="solana-status-badge">
-                                <span class="status-dot"></span>
-                                <span>SYNCING</span>
-                            </div>
-                        </div>
-                        <div id="onchain-data-container" class="onchain-data-list">
-                            <div class="loading-skeleton">
-                                <div class="skeleton-line"></div>
-                                <div class="skeleton-line"></div>
-                                <div class="skeleton-line"></div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; font-size: 0.85rem;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span style="color: var(--text-secondary);">Network Health:</span>
-                                <span id="network-health" style="color: var(--accent-primary); font-weight: 600;">Excellent</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: var(--text-secondary);">Last Block:</span>
-                                <span id="last-block" style="font-family: 'JetBrains Mono', monospace;">-</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <h3>Oracle Nodes</h3>
-                            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                <span class="badge" id="nodes-count-badge">0</span>
-                                <span class="badge badge-success" id="active-nodes-badge">0 Active</span>
-                            </div>
-                        </div>
-                        <div id="oracle-nodes-container" class="nodes-list">
-                            <div class="loading-skeleton">
-                                <div class="skeleton-line"></div>
-                                <div class="skeleton-line"></div>
-                                <div class="skeleton-line"></div>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                            <button class="btn-secondary" id="register-node-btn">
-                                <span class="btn-icon">+</span>
-                                Register Node
-                            </button>
-                            <button class="btn-secondary" id="view-all-nodes-btn">
-                                <span class="btn-icon">📊</span>
-                                View All
-                            </button>
-                        </div>
-                    </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛒</div>
+                    <h3 class="feature-title">Shopping Cart Integration</h3>
+                    <p class="feature-description">Seamless integration with Shopify, WooCommerce, Magento, and custom ecommerce platforms.</p>
                 </div>
-                
-                <div class="oracle-panel full-width">
-                    <div style="margin-bottom: 1.5rem;">
-                        <h3 style="margin-bottom: 0.5rem;">Submit Data Feed</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Submit price or custom data to the oracle network. Your data will be verified against real API sources.</p>
-                    </div>
-                    <div class="oracle-form" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: end;">
-                        <div class="form-group" style="margin: 0;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">
-                                Feed ID
-                                <span style="color: var(--text-secondary); font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem;">(e.g., BTC-USD-PRICE)</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                id="feed-id-input" 
-                                placeholder="BTC-USD-PRICE" 
-                                class="form-input"
-                                style="width: 100%; padding: 0.875rem; font-size: 1rem;"
-                            >
-                        </div>
-                        <div class="form-group" style="margin: 0;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">
-                                Data Value
-                                <span style="color: var(--text-secondary); font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem;">(numeric value)</span>
-                            </label>
-                            <input 
-                                type="number" 
-                                id="feed-data-input" 
-                                placeholder="45000.50" 
-                                step="0.01"
-                                class="form-input"
-                                style="width: 100%; padding: 0.875rem; font-size: 1rem;"
-                            >
-                        </div>
-                        <button class="btn-primary" id="submit-feed-btn" style="padding: 0.875rem 2rem; font-size: 1rem; white-space: nowrap;">
-                            <span style="margin-right: 0.5rem;">📤</span>
-                            Submit Feed
-                        </button>
-                    </div>
-                    <div id="feed-submit-status" style="margin-top: 1rem; padding: 0.75rem; border-radius: 8px; display: none;"></div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3 class="feature-title">Instant Payments</h3>
+                    <p class="feature-description">Real-time payment processing with blockchain confirmation. No waiting for bank transfers.</p>
                 </div>
-                
-                <div class="oracle-panel full-width">
-                    <div style="margin-bottom: 1.5rem;">
-                        <h3 style="margin-bottom: 0.5rem;">Node Management</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Manage your oracle node: stake SOL to participate, view node information, and manage your staking position.</p>
-                    </div>
-                    <div class="node-management" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                        <div>
-                            <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">
-                                    Node Address
-                                    <span style="color: var(--text-secondary); font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem;">(your wallet address)</span>
-                                </label>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <input 
-                                        type="text" 
-                                        id="node-address-input" 
-                                        placeholder="Enter Solana address or use connected wallet" 
-                                        class="form-input"
-                                        style="flex: 1; padding: 0.875rem; font-size: 0.95rem; font-family: var(--font-mono);"
-                                    >
-                                    <button 
-                                        class="btn-secondary" 
-                                        id="use-wallet-btn"
-                                        style="padding: 0.875rem 1rem; white-space: nowrap;"
-                                        title="Use connected wallet address"
-                                    >
-                                        Use Wallet
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">
-                                    Stake Amount (SOL)
-                                    <span style="color: var(--text-secondary); font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem;">(minimum: 0.1 SOL)</span>
-                                </label>
-                                <input 
-                                    type="number" 
-                                    id="stake-amount-input" 
-                                    placeholder="0.0" 
-                                    step="0.1" 
-                                    min="0.1" 
-                                    class="form-input"
-                                    style="width: 100%; padding: 0.875rem; font-size: 1rem;"
-                                >
-                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                                    <button class="btn-secondary" id="stake-quick-0.5" style="flex: 1; padding: 0.5rem; font-size: 0.85rem;">0.5 SOL</button>
-                                    <button class="btn-secondary" id="stake-quick-1" style="flex: 1; padding: 0.5rem; font-size: 0.85rem;">1 SOL</button>
-                                    <button class="btn-secondary" id="stake-quick-5" style="flex: 1; padding: 0.5rem; font-size: 0.85rem;">5 SOL</button>
-                                    <button class="btn-secondary" id="stake-quick-10" style="flex: 1; padding: 0.5rem; font-size: 0.85rem;">10 SOL</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); height: 100%;">
-                                <h4 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 1rem;">Quick Actions</h4>
-                                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                                    <button class="btn-primary" id="stake-btn" style="width: 100%; padding: 1rem; font-size: 1rem; justify-content: center;">
-                                        <span style="margin-right: 0.5rem;">⚡</span>
-                                        Stake SOL
-                                    </button>
-                                    <button class="btn-secondary" id="unstake-btn" style="width: 100%; padding: 1rem; font-size: 1rem; justify-content: center;">
-                                        <span style="margin-right: 0.5rem;">💸</span>
-                                        Unstake SOL
-                                    </button>
-                                    <button class="btn-secondary" id="view-node-btn" style="width: 100%; padding: 1rem; font-size: 1rem; justify-content: center;">
-                                        <span style="margin-right: 0.5rem;">📊</span>
-                                        View Node Info
-                                    </button>
-                                </div>
-                                <div id="node-info-display" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); display: none;">
-                                    <div style="font-size: 0.9rem; color: var(--text-secondary);">
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                            <span>Staked:</span>
-                                            <span id="node-staked-amount" style="color: var(--accent-primary); font-weight: 600;">0 SOL</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                            <span>Reputation:</span>
-                                            <span id="node-reputation" style="color: var(--accent-success); font-weight: 600;">-</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between;">
-                                            <span>Status:</span>
-                                            <span id="node-status" style="color: var(--accent-success); font-weight: 600;">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3 class="feature-title">Secure & Private</h3>
+                    <p class="feature-description">End-to-end encryption, non-custodial wallets, and privacy-first architecture.</p>
                 </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Oracle Staking Pools Section -->
-    <section class="oracle-section" id="oracle-staking">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// staking</span>
-                <h2 class="section-title">Oracle Staking Pools</h2>
-                <p style="color: var(--text-secondary); margin-top: 1rem;">
-                    Stake SOL to become an oracle node operator. Earn rewards for providing accurate data feeds. Choose from multiple liquid staking pools.
-                </p>
-            </div>
-            
-            <div class="oracle-dashboard">
-                <div class="oracle-content-grid">
-                    <div class="oracle-panel">
-                        <h3>Available Staking Pools</h3>
-                        <div id="staking-pools-container" class="staking-pools-list">
-                            <div class="loading">Loading staking pools...</div>
-                        </div>
-                        <button class="btn-secondary" id="refresh-pools-btn" style="margin-top: 1rem;">Refresh Pools</button>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>My Staking Position</h3>
-                        <div id="my-staking-position" class="staking-position">
-                            <div class="loading">Connect wallet to view staking position</div>
-                        </div>
-                        <div class="staking-stats-grid" id="staking-stats-grid" style="display: none;">
-                            <div class="staking-stat">
-                                <div class="staking-stat-label">Total Staked</div>
-                                <div class="staking-stat-value" id="my-total-staked">0 SOL</div>
-                            </div>
-                            <div class="staking-stat">
-                                <div class="staking-stat-label">Estimated APY</div>
-                                <div class="staking-stat-value" id="my-estimated-apy">0%</div>
-                            </div>
-                            <div class="staking-stat">
-                                <div class="staking-stat-label">Daily Rewards</div>
-                                <div class="staking-stat-value" id="my-daily-rewards">0 SOL</div>
-                            </div>
-                            <div class="staking-stat">
-                                <div class="staking-stat-label">Total Rewards</div>
-                                <div class="staking-stat-value" id="my-total-rewards">0 SOL</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Staking Calculator</h3>
-                        <div class="staking-calculator">
-                            <div class="form-group">
-                                <label>Stake Amount (SOL)</label>
-                                <input type="number" id="calc-stake-amount" placeholder="0.0" step="0.1" min="0" class="form-input" value="10">
-                            </div>
-                            <div class="form-group">
-                                <label>APY (%)</label>
-                                <input type="number" id="calc-apy" placeholder="5.0" step="0.1" min="0" class="form-input" value="5">
-                            </div>
-                            <div class="calculator-results" id="calculator-results">
-                                <div class="calc-result">
-                                    <span class="calc-label">Daily Rewards:</span>
-                                    <span class="calc-value" id="calc-daily">0 SOL</span>
-                                </div>
-                                <div class="calc-result">
-                                    <span class="calc-label">Monthly Rewards:</span>
-                                    <span class="calc-value" id="calc-monthly">0 SOL</span>
-                                </div>
-                                <div class="calc-result">
-                                    <span class="calc-label">Yearly Rewards:</span>
-                                    <span class="calc-value" id="calc-yearly">0 SOL</span>
-                                </div>
-                            </div>
-                            <button class="btn-secondary" id="calculate-btn">Calculate</button>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Staking Requirements</h3>
-                        <div class="requirements-list">
-                            <div class="requirement-item">
-                                <span class="requirement-icon">✓</span>
-                                <div class="requirement-content">
-                                    <div class="requirement-title">Minimum Stake</div>
-                                    <div class="requirement-desc">1 SOL minimum to become an oracle node operator</div>
-                                </div>
-                            </div>
-                            <div class="requirement-item">
-                                <span class="requirement-icon">✓</span>
-                                <div class="requirement-content">
-                                    <div class="requirement-title">Accuracy Threshold</div>
-                                    <div class="requirement-desc">Maintain >90% accuracy to avoid slashing</div>
-                                </div>
-                            </div>
-                            <div class="requirement-item">
-                                <span class="requirement-icon">✓</span>
-                                <div class="requirement-content">
-                                    <div class="requirement-title">Uptime Requirement</div>
-                                    <div class="requirement-desc">Stay online >95% of the time for optimal rewards</div>
-                                </div>
-                            </div>
-                            <div class="requirement-item">
-                                <span class="requirement-icon">✓</span>
-                                <div class="requirement-content">
-                                    <div class="requirement-title">Slashing Protection</div>
-                                    <div class="requirement-desc">10% error rate threshold before slashing occurs</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3 class="feature-title">Cross-Chain Payments</h3>
+                    <p class="feature-description">Accept payments from any blockchain. Automatic bridge routing for seamless user experience.</p>
                 </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Oracle Rewards Section -->
-    <section class="oracle-section" id="oracle-rewards">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// rewards</span>
-                <h2 class="section-title">Rewards & Earnings</h2>
-                <p style="color: var(--text-secondary); margin-top: 1rem;">
-                    Track your oracle node rewards, earnings history, and performance bonuses. Rewards are distributed based on accuracy and uptime.
-                </p>
-            </div>
-            
-            <div class="oracle-dashboard">
-                <div class="oracle-content-grid">
-                    <div class="oracle-panel">
-                        <h3>Rewards Overview</h3>
-                        <div id="rewards-overview" class="rewards-overview">
-                            <div class="rewards-summary">
-                                <div class="reward-item">
-                                    <div class="reward-label">Total Earned</div>
-                                    <div class="reward-value" id="total-earned">0 SOL</div>
-                                </div>
-                                <div class="reward-item">
-                                    <div class="reward-label">Pending Rewards</div>
-                                    <div class="reward-value" id="pending-rewards">0 SOL</div>
-                                </div>
-                                <div class="reward-item">
-                                    <div class="reward-label">Accuracy Bonus</div>
-                                    <div class="reward-value" id="accuracy-bonus">0%</div>
-                                </div>
-                                <div class="reward-item">
-                                    <div class="reward-label">Next Distribution</div>
-                                    <div class="reward-value" id="next-distribution">--</div>
-                                </div>
-                            </div>
-                        </div>
-                        <button class="btn-primary" id="claim-rewards-btn" style="margin-top: 1rem; display: none;">Claim Rewards</button>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Rewards History</h3>
-                        <div id="rewards-history-container" class="rewards-history">
-                            <div class="loading">No rewards history available</div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Performance Metrics</h3>
-                        <div id="performance-metrics" class="performance-metrics">
-                            <div class="metric-item">
-                                <div class="metric-label">Data Accuracy</div>
-                                <div class="metric-bar">
-                                    <div class="metric-fill" id="accuracy-bar" style="width: 0%"></div>
-                                </div>
-                                <div class="metric-value" id="accuracy-value">0%</div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="metric-label">Uptime</div>
-                                <div class="metric-bar">
-                                    <div class="metric-fill" id="uptime-bar" style="width: 0%"></div>
-                                </div>
-                                <div class="metric-value" id="uptime-value">0%</div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="metric-label">Response Time</div>
-                                <div class="metric-bar">
-                                    <div class="metric-fill" id="response-bar" style="width: 0%"></div>
-                                </div>
-                                <div class="metric-value" id="response-value">0ms</div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="metric-label">Reputation Score</div>
-                                <div class="metric-bar">
-                                    <div class="metric-fill" id="reputation-bar" style="width: 0%"></div>
-                                </div>
-                                <div class="metric-value" id="reputation-value">0/100</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Reward Breakdown</h3>
-                        <div id="reward-breakdown" class="reward-breakdown">
-                            <div class="breakdown-item">
-                                <span class="breakdown-label">Base Staking Rewards</span>
-                                <span class="breakdown-value" id="base-rewards">0 SOL</span>
-                            </div>
-                            <div class="breakdown-item">
-                                <span class="breakdown-label">Accuracy Bonus</span>
-                                <span class="breakdown-value" id="bonus-rewards">0 SOL</span>
-                            </div>
-                            <div class="breakdown-item">
-                                <span class="breakdown-label">Uptime Bonus</span>
-                                <span class="breakdown-value" id="uptime-bonus">0 SOL</span>
-                            </div>
-                            <div class="breakdown-item breakdown-total">
-                                <span class="breakdown-label">Total Estimated Rewards</span>
-                                <span class="breakdown-value" id="total-estimated">0 SOL</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Oracle Node Health Section -->
-    <section class="oracle-section" id="oracle-health">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// health</span>
-                <h2 class="section-title">Node Health & Monitoring</h2>
-                <p style="color: var(--text-secondary); margin-top: 1rem;">
-                    Monitor your oracle node's health, uptime, response times, and overall performance metrics in real-time.
-                </p>
-            </div>
-            
-            <div class="oracle-dashboard">
-                <div class="oracle-content-grid">
-                    <div class="oracle-panel">
-                        <h3>Node Status</h3>
-                        <div id="node-status-container" class="node-status">
-                            <div class="status-indicator" id="node-status-indicator">
-                                <span class="status-dot"></span>
-                                <span class="status-text" id="node-status-text">Unknown</span>
-                            </div>
-                            <div class="status-details" id="node-status-details">
-                                <div class="status-detail">
-                                    <span class="detail-label">Last Seen:</span>
-                                    <span class="detail-value" id="last-seen">--</span>
-                                </div>
-                                <div class="status-detail">
-                                    <span class="detail-label">Health Score:</span>
-                                    <span class="detail-value" id="health-score">--</span>
-                                </div>
-                                <div class="status-detail">
-                                    <span class="detail-label">Total Submissions:</span>
-                                    <span class="detail-value" id="total-submissions">0</span>
-                                </div>
-                                <div class="status-detail">
-                                    <span class="detail-label">Correct Submissions:</span>
-                                    <span class="detail-value" id="correct-submissions">0</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Health Metrics</h3>
-                        <div id="health-metrics-container" class="health-metrics">
-                            <div class="health-metric">
-                                <div class="health-metric-header">
-                                    <span class="metric-name">Uptime</span>
-                                    <span class="metric-status" id="uptime-status">--</span>
-                                </div>
-                                <div class="health-progress">
-                                    <div class="health-progress-bar" id="uptime-progress" style="width: 0%"></div>
-                                </div>
-                                <div class="health-metric-value" id="uptime-percentage">0%</div>
-                            </div>
-                            <div class="health-metric">
-                                <div class="health-metric-header">
-                                    <span class="metric-name">Response Time</span>
-                                    <span class="metric-status" id="response-status">--</span>
-                                </div>
-                                <div class="health-progress">
-                                    <div class="health-progress-bar" id="response-progress" style="width: 0%"></div>
-                                </div>
-                                <div class="health-metric-value" id="response-time-value">0ms</div>
-                            </div>
-                            <div class="health-metric">
-                                <div class="health-metric-header">
-                                    <span class="metric-name">Accuracy Rate</span>
-                                    <span class="metric-status" id="accuracy-status">--</span>
-                                </div>
-                                <div class="health-progress">
-                                    <div class="health-progress-bar" id="accuracy-progress" style="width: 0%"></div>
-                                </div>
-                                <div class="health-metric-value" id="accuracy-percentage">0%</div>
-                            </div>
-                            <div class="health-metric">
-                                <div class="health-metric-header">
-                                    <span class="metric-name">Reputation</span>
-                                    <span class="metric-status" id="reputation-status">--</span>
-                                </div>
-                                <div class="health-progress">
-                                    <div class="health-progress-bar" id="reputation-progress" style="width: 0%"></div>
-                                </div>
-                                <div class="health-metric-value" id="reputation-percentage">0/100</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Recent Activity</h3>
-                        <div id="node-activity-container" class="node-activity">
-                            <div class="loading">No recent activity</div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Alerts & Warnings</h3>
-                        <div id="node-alerts-container" class="node-alerts">
-                            <div class="alert-item alert-success">
-                                <span class="alert-icon">✓</span>
-                                <span class="alert-message">Node is operating normally</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Oracle Historical Data Section -->
-    <section class="oracle-section" id="oracle-history">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// analytics</span>
-                <h2 class="section-title">Historical Data & Analytics</h2>
-                <p style="color: var(--text-secondary); margin-top: 1rem;">
-                    View historical price data, feed submissions, consensus rates, and network analytics over time.
-                </p>
-            </div>
-            
-            <div class="oracle-dashboard">
-                <div class="oracle-content-grid">
-                    <div class="oracle-panel full-width">
-                        <h3>Price History</h3>
-                        <div class="history-controls">
-                            <select id="history-symbol-select" class="form-input" style="max-width: 200px;">
-                                <option value="BTC">BTC</option>
-                                <option value="ETH">ETH</option>
-                                <option value="SOL">SOL</option>
-                                <option value="ZEC">ZEC</option>
-                            </select>
-                            <select id="history-timeframe-select" class="form-input" style="max-width: 200px;">
-                                <option value="24">Last 24 Hours</option>
-                                <option value="168">Last 7 Days</option>
-                                <option value="720">Last 30 Days</option>
-                            </select>
-                            <button class="btn-secondary" id="load-history-btn">Load History</button>
-                        </div>
-                        <div id="price-history-container" class="price-history">
-                            <div class="loading">Select symbol and timeframe to view history</div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Feed Submissions</h3>
-                        <div id="feed-submissions-container" class="feed-submissions">
-                            <div class="loading">No feed submissions yet</div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Consensus Analytics</h3>
-                        <div id="consensus-analytics-container" class="consensus-analytics">
-                            <div class="analytics-item">
-                                <div class="analytics-label">Average Consensus Rate</div>
-                                <div class="analytics-value" id="avg-consensus">0%</div>
-                            </div>
-                            <div class="analytics-item">
-                                <div class="analytics-label">Total Feed Submissions</div>
-                                <div class="analytics-value" id="total-feed-submissions">0</div>
-                            </div>
-                            <div class="analytics-item">
-                                <div class="analytics-label">Consensus Achieved</div>
-                                <div class="analytics-value" id="consensus-achieved">0</div>
-                            </div>
-                            <div class="analytics-item">
-                                <div class="analytics-label">Disagreements</div>
-                                <div class="analytics-value" id="disagreements">0</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Network Statistics</h3>
-                        <div id="network-stats-container" class="network-stats">
-                            <div class="stat-row">
-                                <span class="stat-label">Total Requests:</span>
-                                <span class="stat-value" id="total-requests">0</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Successful Requests:</span>
-                                <span class="stat-value" id="successful-requests">0</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Failed Requests:</span>
-                                <span class="stat-value" id="failed-requests">0</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Success Rate:</span>
-                                <span class="stat-value" id="success-rate">0%</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Avg Response Time:</span>
-                                <span class="stat-value" id="avg-response-time">0ms</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Oracle Consensus Section -->
-    <section class="oracle-section" id="oracle-consensus">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// consensus</span>
-                <h2 class="section-title">Consensus & Verification</h2>
-                <p style="color: var(--text-secondary); margin-top: 1rem;">
-                    View consensus mechanisms, data verification processes, and oracle network agreement rates for each feed.
-                </p>
-            </div>
-            
-            <div class="oracle-dashboard">
-                <div class="oracle-content-grid">
-                    <div class="oracle-panel">
-                        <h3>Active Consensus Feeds</h3>
-                        <div id="consensus-feeds-container" class="consensus-feeds">
-                            <div class="loading">Loading consensus feeds...</div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Consensus Mechanism</h3>
-                        <div class="consensus-info">
-                            <div class="info-item">
-                                <div class="info-title">Verification Threshold</div>
-                                <div class="info-value">51%</div>
-                                <div class="info-desc">Minimum agreement required for consensus</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-title">Minimum Nodes</div>
-                                <div class="info-value">3</div>
-                                <div class="info-desc">Minimum nodes required for consensus</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-title">Aggregation Method</div>
-                                <div class="info-value">Median</div>
-                                <div class="info-desc">Primary method for price aggregation</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-title">Outlier Detection</div>
-                                <div class="info-value">Enabled</div>
-                                <div class="info-desc">Automatically filters outliers using 2σ rule</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Feed Verification Status</h3>
-                        <div id="verification-status-container" class="verification-status">
-                            <div class="verification-item">
-                                <span class="verification-feed">BTC-USD</span>
-                                <span class="verification-status verified">Verified</span>
-                                <span class="verification-confidence">95%</span>
-                                <span class="verification-proof">✓ Proof</span>
-                            </div>
-                        </div>
-                        <div style="margin-top: 1rem;">
-                            <button class="btn-secondary" id="verify-proofs-btn">Verify All Proofs</button>
-                            <button class="btn-secondary" id="refresh-proof-status-btn">Refresh Proof Status</button>
-                        </div>
-                    </div>
-                    
-                    <div class="oracle-panel">
-                        <h3>Node Agreement Matrix</h3>
-                        <div id="agreement-matrix-container" class="agreement-matrix">
-                            <div class="loading">Loading agreement data...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <section class="protocol-section" id="protocol">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// protocol</span>
-                <h2 class="section-title">How It Works</h2>
-            </div>
-            <div class="protocol-flow">
-                <div class="flow-step" data-step="1">
-                    <div class="step-number">01</div>
-                    <div class="step-content">
-                        <h3>Deposit $ZEC</h3>
-                        <p>Send your Zcash to our shielded pool. Your transaction is private and encrypted.</p>
-                        <div class="code-snippet">
-                            <div class="code-header">
-                                <span class="code-lang">bash</span>
-                            </div>
-                            <pre><code>zcash-cli sendtoaddress \\
-  "zt1..." \\
-  1.0 \\
-  --memo "solana-bridge"</code></pre>
-                        </div>
-                    </div>
-                </div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step" data-step="2">
-                    <div class="step-number">02</div>
-                    <div class="step-content">
-                        <h3>Zero-Knowledge Proof</h3>
-                        <p>We generate a zero-knowledge proof that you own the funds without revealing your identity.</p>
-                        <div class="code-snippet">
-                            <div class="code-header">
-                                <span class="code-lang">bash</span>
-                            </div>
-                            <pre><code>zcash-bridge generate-proof \\
-  --txid "abc123..." \\
-  --amount 1.0 \\
-  --recipient "solana-address"</code></pre>
-                        </div>
-                    </div>
-                </div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step" data-step="3">
-                    <div class="step-number">03</div>
-                    <div class="step-content">
-                        <h3>Bridge to Solana</h3>
-                        <p>Your proof is verified and equivalent value is minted on Solana as private SPL tokens.</p>
-                        <div class="code-snippet">
-                            <div class="code-header">
-                                <span class="code-lang">bash</span>
-                            </div>
-                            <pre><code>zcash-bridge verify-and-mint \\
-  --proof-file proof.json \\
-  --amount 1.0 \\
-  --recipient "solana-address"</code></pre>
-                        </div>
-                    </div>
-                </div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step" data-step="4">
-                    <div class="step-number">04</div>
-                    <div class="step-content">
-                        <h3>Trade Privately</h3>
-                        <p>Use your private tokens to buy any Solana asset. Your transaction history remains private.</p>
-                        <div class="code-snippet">
-                            <div class="code-header">
-                                <span class="code-lang">bash</span>
-                            </div>
-                            <pre><code>zcash-bridge swap \\
-  --input-token "private-token-mint" \\
-  --output-token "solana-asset-mint" \\
-  --amount 1.0 \\
-  --slippage 0.01</code></pre>
-                        </div>
-                    </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3 class="feature-title">Analytics Dashboard</h3>
+                    <p class="feature-description">Real-time transaction monitoring, revenue analytics, and customer insights.</p>
                 </div>
             </div>
         </div>
     </section>
 
     
-    <section class="proof-section" id="proof">
+    <section id="quickstart" class="section section-dark">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// proof</span>
-                <h2 class="section-title">Proof of Concept</h2>
+            <h2 class="section-title">Get Started in 5 Minutes</h2>
+            <div class="quickstart-content">
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>Installation</span>
+                    </div>
+                    <pre><code>npm install cryptocommerce-sdk
+# or
+yarn add cryptocommerce-sdk</code></pre>
+                </div>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>Basic Integration</span>
+                    </div>
+                    <pre><code>import { CryptoCommerce } from 'cryptocommerce-sdk';
+
+const sdk = new CryptoCommerce({
+  apiKey: 'your-api-key',
+  network: 'mainnet'
+});
+
+// Initialize payment
+const payment = await sdk.createPayment({
+  amount: 99.99,
+  currency: 'USD',
+  crypto: 'SOL',
+  orderId: 'order-123'
+});
+
+// Display payment QR code
+payment.showQRCode();</code></pre>
+                </div>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>Webhook Handler</span>
+                    </div>
+                    <pre><code>// Handle payment confirmation
+sdk.on('payment.confirmed', (event) => {
+  console.log('Payment confirmed:', event.orderId);
+  // Update order status in your database
+  updateOrderStatus(event.orderId, 'paid');
+});</code></pre>
+                </div>
             </div>
-            <div class="proof-grid">
-                <div class="proof-card">
-                    <div class="proof-icon"></div>
-                    <h3>Zero-Knowledge Privacy</h3>
-                    <p>All transactions use zk-SNARKs to prove validity without revealing sender, receiver, or amount.</p>
-                    <div class="proof-code">
-                        <pre><code>$ zcash-bridge show-proof --txid abc123
-Proof {
-    public_inputs: [amount_hash, recipient_hash],
-    private_inputs: [sender_key, amount, memo],
-    verification_key: VK
+        </div>
+    </section>
+
+    
+    <section id="api" class="section">
+        <div class="container">
+            <h2 class="section-title">API Reference</h2>
+            <div class="api-docs">
+                <div class="api-endpoint">
+                    <h3 class="api-method">createPayment()</h3>
+                    <p class="api-description">Create a new cryptocurrency payment request.</p>
+                    <div class="api-params">
+                        <strong>Parameters:</strong>
+                        <ul>
+                            <li><code>amount</code> - Payment amount in fiat currency</li>
+                            <li><code>currency</code> - Fiat currency (USD, EUR, etc.)</li>
+                            <li><code>crypto</code> - Cryptocurrency to accept (BTC, ETH, SOL, etc.)</li>
+                            <li><code>orderId</code> - Your order identifier</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="api-endpoint">
+                    <h3 class="api-method">getPaymentStatus()</h3>
+                    <p class="api-description">Check the status of a payment transaction.</p>
+                    <div class="api-params">
+                        <strong>Parameters:</strong>
+                        <ul>
+                            <li><code>paymentId</code> - Payment transaction ID</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="api-endpoint">
+                    <h3 class="api-method">getSupportedCurrencies()</h3>
+                    <p class="api-description">Get list of supported cryptocurrencies and fiat currencies.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- SOL Payment Oracle Section -->
+    <section id="oracle" class="section section-dark">
+        <div class="container">
+            <h2 class="section-title">Solana Payment Oracle</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem; max-width: 800px; margin-left: auto; margin-right: auto;">
+                Zero-Knowledge payment verification oracle for Solana transactions. 
+                Verify payments without revealing transaction details.
+            </p>
+            
+            <div class="oracle-features-grid">
+                <div class="oracle-feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Zero-Knowledge Proofs</h3>
+                    <p>Verify payments without exposing transaction amounts or addresses</p>
+                </div>
+                <div class="oracle-feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Real-Time Verification</h3>
+                    <p>Instant payment confirmation using Solana blockchain transactions</p>
+                </div>
+                <div class="oracle-feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Privacy First</h3>
+                    <p>Complete transaction privacy with selective disclosure</p>
+                </div>
+                <div class="oracle-feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Ecommerce Integration</h3>
+                    <p>Easy SDK integration for any ecommerce platform</p>
+                </div>
+            </div>
+            
+            <div class="oracle-demo">
+                <h3>Payment Verification</h3>
+                <div class="verification-form">
+                    <div class="checkout-form-group">
+                        <label>Payment ID</label>
+                        <input type="text" id="payment-id-input" placeholder="Enter payment ID to verify">
+                    </div>
+                    <div class="checkout-form-group">
+                        <label>Expected Amount (SOL)</label>
+                        <input type="number" id="expected-amount" step="0.00000001" placeholder="0.00000000">
+                    </div>
+                    <button class="btn-primary" id="verify-payment-btn">Verify Payment with ZK Proof</button>
+                    <div id="verification-result" style="margin-top: 1rem;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Merchant Dashboard Section -->
+    <section id="merchant" class="section">
+        <div class="container">
+            <h2 class="section-title">Payment Dashboard</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+                Manage SOL payments and verify transactions using zero-knowledge proofs
+            </p>
+            <div class="merchant-tabs">
+                <button class="merchant-tab active" data-tab="overview">Overview</button>
+                <button class="merchant-tab" data-tab="payments">Payments</button>
+                <button class="merchant-tab" data-tab="verification">ZK Verification</button>
+                <button class="merchant-tab" data-tab="webhooks">Webhooks</button>
+                <button class="merchant-tab" data-tab="settings">Settings</button>
+            </div>
+            <div class="merchant-content">
+                <div id="merchant-overview" class="merchant-tab-content active">
+                    <div class="merchant-stats-grid">
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">All-Time Volume</div>
+                            <div class="stat-value" id="stat-volume">$0.00</div>
+                            <div class="stat-desc">From verified payments only</div>
+                        </div>
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">Total SOL Received</div>
+                            <div class="stat-value" id="stat-sol">0.00000000 SOL</div>
+                        </div>
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">Verified Payments</div>
+                            <div class="stat-value" id="stat-payments">0</div>
+                        </div>
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">ZK Proofs Generated</div>
+                            <div class="stat-value" id="stat-proofs">0</div>
+                        </div>
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">Pending Verification</div>
+                            <div class="stat-value" id="stat-pending">0</div>
+                        </div>
+                    </div>
+                    <div class="merchant-actions">
+                        <button class="btn-primary" id="create-payment-btn">Create Payment Request</button>
+                        <button class="btn-secondary" id="view-payments-btn">View All Payments</button>
+                    </div>
+                </div>
+                <div id="merchant-payments" class="merchant-tab-content">
+                    <div class="merchant-header">
+                        <h3>Payment Management</h3>
+                        <select id="payment-filter" class="sort-select">
+                            <option value="all">All Payments</option>
+                            <option value="pending">Pending</option>
+                            <option value="verified">Verified</option>
+                            <option value="confirmed">Confirmed</option>
+                        </select>
+                    </div>
+                    <div id="merchant-payments-list"></div>
+                </div>
+                <div id="merchant-verification" class="merchant-tab-content">
+                    <h3>Zero-Knowledge Verification</h3>
+                    <div id="merchant-verification-content">
+                        <div class="zk-info">
+                            <h4>How ZK Verification Works</h4>
+                            <ol>
+                                <li>Payment is made to a Solana wallet address</li>
+                                <li>ZK proof is generated proving payment amount without revealing details</li>
+                                <li>Oracle verifies the proof and confirms payment</li>
+                                <li>Merchant receives confirmation without seeing transaction details</li>
+                            </ol>
+                        </div>
+                        <div class="verification-form" style="margin-top: 2rem;">
+                            <h4>Verify Payment</h4>
+                            <div class="checkout-form-group">
+                                <label>Transaction Signature</label>
+                                <input type="text" id="tx-hash-input" placeholder="Solana transaction signature">
+                            </div>
+                            <div class="checkout-form-group">
+                                <label>Expected Amount (SOL)</label>
+                                <input type="number" id="verify-amount" step="0.00000001" placeholder="0.00000000">
+                            </div>
+                            <button class="btn-primary" id="zk-verify-btn">Generate & Verify ZK Proof</button>
+                            <div id="zk-verification-result" style="margin-top: 1rem;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="merchant-settings" class="merchant-tab-content">
+                    <h3>Oracle Settings</h3>
+                    <div id="merchant-settings-content">
+                        <div class="settings-form">
+                            <div class="checkout-form-group">
+                                <label>Solana Wallet Address</label>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="text" id="sol-address" placeholder="Paste your Solana wallet address here" style="flex: 1;">
+                                    <button type="button" class="btn-secondary" onclick="pasteAddress()" style="white-space: nowrap;">Paste</button>
+                                </div>
+                                <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">Your Solana wallet address for receiving payments. You can paste it from your clipboard.</small>
+                            </div>
+                            <div class="checkout-form-group">
+                                <label>Default Payment Token</label>
+                                <select id="default-token" class="checkout-form-group" style="width: 100%; padding: 0.75rem;">
+                                    <option value="SOL">SOL (Solana)</option>
+                                    <option value="USDC">USDC (USD Coin)</option>
+                                    <option value="USDT">USDT (Tether)</option>
+                                    <option value="EURC">EURC (Euro Coin)</option>
+                                </select>
+                                <small style="color: var(--text-secondary);">Default token for payments</small>
+                            </div>
+                            <div class="checkout-form-group">
+                                <label>Payment Confirmation Threshold</label>
+                                <input type="number" id="confirmation-threshold" value="1" min="1" max="10">
+                                <small style="color: var(--text-secondary);">Number of confirmations required</small>
+                            </div>
+                            <button class="btn-primary" onclick="saveOracleSettings()" style="margin-top: 1rem;">Save Settings</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="merchant-webhooks" class="merchant-tab-content">
+                    <div class="merchant-header">
+                        <h3>Webhook Management</h3>
+                        <button class="btn-primary" id="add-webhook-btn">Add Webhook</button>
+                    </div>
+                    <div id="webhooks-list"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="examples" class="section section-dark">
+        <div class="container">
+            <h2 class="section-title">Integration Examples</h2>
+            <div class="examples-grid">
+                <div class="example-card">
+                    <h3 class="example-title">React Ecommerce</h3>
+                    <pre><code>import { CryptoCommerce } from 'cryptocommerce-sdk';
+
+function CheckoutButton({ order }) {
+  const handlePayment = async () => {
+    const sdk = new CryptoCommerce({ apiKey: 'xxx' });
+    const payment = await sdk.createPayment({
+      amount: order.total,
+      currency: 'USD',
+      crypto: 'SOL',
+      orderId: order.id
+    });
+    payment.showModal();
+  };
+
+  return (
+    &lt;button onClick={handlePayment}&gt;
+      Pay with Crypto
+    &lt;/button&gt;
+  );
 }</code></pre>
-                    </div>
                 </div>
-                <div class="proof-card">
-                    <div class="proof-icon"></div>
-                    <h3>Solana Integration</h3>
-                    <p>Native SPL token support with program verification. Fast, cheap, and composable.</p>
-                    <div class="proof-code">
-                        <pre><code>$ solana program invoke BRIDGE_PROGRAM_ID \\
-  --instruction verify_and_mint \\
-  --accounts bridge_account,mint,user \\
-  --data zk_proof_bytes</code></pre>
-                    </div>
+                <div class="example-card">
+                    <h3 class="example-title">Node.js Backend</h3>
+                    <pre><code>const { CryptoCommerce } = require('cryptocommerce-sdk');
+
+app.post('/api/checkout', async (req, res) => {
+  const sdk = new CryptoCommerce({ apiKey: process.env.API_KEY });
+  
+  const payment = await sdk.createPayment({
+    amount: req.body.amount,
+    currency: 'USD',
+    crypto: req.body.crypto,
+    orderId: generateOrderId()
+  });
+
+  res.json({ paymentId: payment.id, qrCode: payment.qrCode });
+});</code></pre>
                 </div>
-                <div class="proof-card">
-                    <div class="proof-icon"></div>
-                    <h3>Trustless Bridge</h3>
-                    <p>No custodial risk. Smart contracts verify proofs on-chain. You maintain full control.</p>
-                    <div class="proof-code">
-                        <pre><code>$ zcash-bridge verify \\
-  --proof proof.json \\
-  --public-inputs inputs.json \\
-  --verification-key vk.bin
+                <div class="example-card">
+                    <h3 class="example-title">Shopify Integration</h3>
+                    <pre><code>// Shopify Liquid Template
+&lt;script src="https://cdn.cryptocommerce.io/sdk.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const sdk = new CryptoCommerce.SDK({
+    apiKey: '{{ shop.metafields.crypto.api_key }}'
+  });
 
-Proof verified successfully</code></pre>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    
-    <section class="code-examples" id="docs">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// examples</span>
-                <h2 class="section-title">Command Line Examples</h2>
-            </div>
-            <div class="examples-content">
-                <div class="tab-content active" id="bash">
-                    <div class="code-block-large">
-                        <div class="code-header">
-                            <span class="code-lang">bash</span>
-                            <button class="copy-btn">Copy</button>
-                        </div>
-                        <pre><code># Initialize bridge connection
-$ zcash-bridge --init
-
-# Check connection status
-$ zcash-bridge status
-Connected to Zcash network
-Connected to Solana network
-
-# Deposit ZEC to pool
-$ zcash-cli sendtoaddress "zt1..." 1.0 --memo "solana-bridge"
-
-# Generate zero-knowledge proof
-$ zcash-bridge generate-proof \
-  --txid "abc123..." \
-  --amount 1.0 \
-  --recipient "solana-address" \
-  --output proof.json
-
-# Verify and mint on Solana
-$ zcash-bridge verify-and-mint \
-  --proof-file proof.json \
-  --amount 1.0 \
-  --recipient "solana-address"
-
-# Check transaction status
-$ zcash-bridge check --txid "abc123..."
-Transaction confirmed
-Proof verified
-Minted on Solana
-
-# Swap bridged tokens
-$ zcash-bridge swap \
-  --input-token "private-token-mint" \
-  --output-token "solana-asset-mint" \
-  --amount 1.0 \
-  --slippage 0.01
-
-# Check pool integrity
-$ zcash-bridge check-pool
-Pool balance: 100.5 ZEC
-All transactions verified
-Chain synchronization OK</code></pre>
-                    </div>
+  document.getElementById('crypto-pay')
+    .addEventListener('click', async () => {
+      const payment = await sdk.createPayment({
+        amount: {{ cart.total_price }},
+        currency: 'USD',
+        crypto: 'BTC',
+        orderId: '{{ cart.token }}'
+      });
+      payment.showModal();
+    });
+&lt;/script&gt;</code></pre>
                 </div>
             </div>
         </div>
     </section>
 
     
-    <section class="checker-section" id="checker">
+    <section id="docs" class="section">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// checker</span>
-                <h2 class="section-title">Transaction Checker</h2>
-            </div>
-            <div class="checker-container">
-                <div class="checker-form">
-                    <div class="form-group">
-                        <label>Transaction ID / Signature</label>
-                        <div class="input-group">
-                            <input type="text" id="check-txid" placeholder="Enter Zcash TXID or Solana signature">
-                            <button class="btn-primary" id="check-tx-btn">Check</button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Or check pool integrity</label>
-                        <button class="btn-secondary btn-large" id="check-pool-btn">Check Pool Integrity</button>
-                    </div>
-                    <div id="checker-results" class="checker-results"></div>
+            <h2 class="section-title">Documentation</h2>
+            <div class="docs-grid">
+                <div class="doc-card">
+                    <h3>Getting Started</h3>
+                    <p>Complete guide to integrating CryptoCommerce SDK into your application.</p>
+                    <a href="#" class="doc-link">Read More →</a>
                 </div>
-                <div class="checker-info">
-                    <h3>What gets checked?</h3>
-                    <ul class="check-list">
-                        <li>Transaction exists on chain</li>
-                        <li>Transaction confirmations</li>
-                        <li>Proof validity and structure</li>
-                        <li>Amount consistency</li>
-                        <li>Recipient matching</li>
-                        <li>Pool balance integrity</li>
-                        <li>Chain synchronization</li>
-                    </ul>
+                <div class="doc-card">
+                    <h3>Payment Methods</h3>
+                    <p>Learn about supported cryptocurrencies and payment options.</p>
+                    <a href="#" class="doc-link">Read More →</a>
+                </div>
+                <div class="doc-card">
+                    <h3>Webhooks</h3>
+                    <p>Set up webhooks to receive payment notifications in real-time.</p>
+                    <a href="#" class="doc-link">Read More →</a>
+                </div>
+                <div class="doc-card">
+                    <h3>Security</h3>
+                    <p>Best practices for secure cryptocurrency payment processing.</p>
+                    <a href="#" class="doc-link">Read More →</a>
                 </div>
             </div>
         </div>
     </section>
 
     
-    <div id="wallet-modal" class="wallet-modal" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title">Wallet Portfolio</h2>
-                <button class="modal-close" id="modal-close">×</button>
-            </div>
-            <div class="modal-body" id="modal-body">
-                
-            </div>
-        </div>
-    </div>
-
-    
-    <section class="bridge-interface-section" id="bridge-interface">
+    <section id="game" class="section game-section">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// bridge</span>
-                <h2 class="section-title">Cross-Chain Bridge</h2>
-            </div>
-            <div class="bridge-container">
-                <div class="bridge-form">
-                    <div class="form-group">
-                        <label>From: Zcash</label>
-                        <div class="input-group">
-                            <input type="number" id="zcash-amount" placeholder="0.0" step="0.00000001" min="0">
-                            <span class="input-suffix">ZEC</span>
-                        </div>
-                        <div class="balance-info">
-                            <span>Zcash Balance: </span>
-                            <span id="zcash-balance">0.0 ZEC</span>
-                        </div>
-                    </div>
-                    <div class="bridge-arrow">↓</div>
-                    <div class="form-group">
-                        <label>To: Solana</label>
-                        <div class="input-group">
-                            <input type="text" id="solana-recipient" placeholder="Enter Solana address or use connected wallet">
-                            <button class="btn-small" id="use-wallet-btn" style="display:none;">Use Wallet</button>
-                        </div>
-                        <div class="balance-info">
-                            <span>Solana Balance: </span>
-                            <span id="solana-balance-display">0.0 SOL</span>
-                        </div>
-                    </div>
-                    <button class="btn-primary btn-large" id="execute-bridge-btn" disabled>Bridge ZEC → SOL</button>
-                    <div id="bridge-status" class="bridge-status"></div>
-                </div>
-                <div class="transaction-history">
-                    <h3>Recent Transactions</h3>
-                    <div id="transaction-list" class="transaction-list">
-                        <div class="transaction-item empty">No transactions yet</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    
-    <section class="game-section" id="game">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// game</span>
-                <h2 class="section-title">Mini Game - Free to Play</h2>
-                <p style="color: var(--text-secondary); margin-top: 1rem;">
-                    Click targets to score points! Free to play - just connect your wallet to start. Compete on the leaderboard!
-                </p>
-            </div>
+            <h2 class="section-title">Mini Game - Free to Play</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+                Click targets to score points! Free to play - just connect your wallet to start. Compete on the leaderboard!
+            </p>
+            
             <div class="game-container">
                 <div class="game-controls">
                     <div class="game-info">
@@ -1241,192 +529,35 @@ Chain synchronization OK</code></pre>
                             <span class="info-label">Time:</span>
                             <span class="info-value" id="game-time">0s</span>
                         </div>
+                        <div class="info-item">
+                            <span class="info-label">Combo:</span>
+                            <span class="info-value" id="combo-indicator" style="display: none; color: #ff00ff;">0x</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Level:</span>
+                            <span class="info-value" id="difficulty-indicator" style="display: none; color: #00ff88;">1</span>
+                        </div>
+                    </div>
+                    <div id="powerup-indicator" style="display: none; margin-top: 1rem; padding: 0.75rem; background: rgba(0, 255, 136, 0.2); border: 1px solid #00ff88; border-radius: 6px; color: #00ff88; font-family: var(--font-mono); font-size: 0.9rem; text-align: center;"></div>
+                    <div id="wallet-status-indicator" style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(255, 68, 68, 0.1); border: 1px solid var(--accent-error); border-radius: 6px; color: var(--accent-error); font-family: var(--font-mono); font-size: 0.9rem; display: none;">
+                        Wallet not connected. Click the button below to connect.
                     </div>
                     <button class="btn-primary btn-large" id="start-game-btn">Connect Wallet & Start Game</button>
-                    <div id="game-status" class="game-status"></div>
+                    <div class="game-status" id="game-status"></div>
                 </div>
+                
                 <div class="game-area" id="game-area">
                     <div class="game-start-screen" id="game-start-screen">
-                        <h3>Mini Game</h3>
-                        <p>Click the button above to connect your wallet and start playing!</p>
-                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 1rem;">
-                            Click on targets to score points. Clicking background loses 1 life. Miss 5 targets and the game ends!
-                        </p>
+                        <h3>Ready to Play?</h3>
+                        <p style="color: var(--text-secondary); margin-top: 1rem;">Connect your wallet and click Start Game!</p>
                     </div>
                 </div>
-                <div class="leaderboard-section" id="leaderboard-section" style="margin-top: 2rem;">
-                    <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">Leaderboard</h3>
-                    <div id="leaderboard-container" class="leaderboard-container">
-                        <p style="color: var(--text-secondary);">Loading leaderboard...</p>
+                
+                <div style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Leaderboard</h3>
+                    <div id="leaderboard-container" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; min-height: 200px;">
+                        <p style="color: var(--text-secondary);">No scores yet. Be the first!</p>
                     </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    
-    <section class="api-section" id="api">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// api</span>
-                <h2 class="section-title">Protocol API</h2>
-            </div>
-            <div class="api-content">
-                <div class="api-endpoints">
-                    <h3>Available Endpoints</h3>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">GET</code>
-                        <code class="endpoint-path">api.getStatus()</code>
-                        <p>Get protocol status and pool statistics</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">POST</code>
-                        <code class="endpoint-path">api.bridgeZecToSolana(amount, recipient)</code>
-                        <p>Bridge ZEC to Solana</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">GET</code>
-                        <code class="endpoint-path">api.checkTransaction(txid)</code>
-                        <p>Check transaction status</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">GET</code>
-                        <code class="endpoint-path">api.getPoolIntegrity()</code>
-                        <p>Get pool integrity report</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">GET</code>
-                        <code class="endpoint-path">api.getRecentTransactions(limit)</code>
-                        <p>Get recent transactions</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">POST</code>
-                        <code class="endpoint-path">api.sendPayment(amount, recipient, memo)</code>
-                        <p>Send SOL payment. Returns transaction signature on success.</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">GET</code>
-                        <code class="endpoint-path">oracle.getPriceFeed(symbol)</code>
-                        <p>Get real-time price feed for a cryptocurrency symbol (BTC, ETH, SOL, etc.)</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">GET</code>
-                        <code class="endpoint-path">oracle.getAllPriceFeeds()</code>
-                        <p>Get all available price feeds with aggregated data from multiple sources</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">POST</code>
-                        <code class="endpoint-path">oracle.submitDataFeed(feedId, data, nodeAddress)</code>
-                        <p>Submit custom data feed to the oracle network</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">POST</code>
-                        <code class="endpoint-path">oracle.registerNode(nodeAddress, metadata)</code>
-                        <p>Register a new oracle node in the network</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">POST</code>
-                        <code class="endpoint-path">oracle.stake(nodeAddress, amount)</code>
-                        <p>Stake SOL to become a qualified oracle node operator</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">GET</code>
-                        <code class="endpoint-path">oracle.getStats()</code>
-                        <p>Get oracle network statistics (nodes, staked amount, feeds, etc.)</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">POST</code>
-                        <code class="endpoint-path">oracle.verifyFeedProof(feedId, entryIndex)</code>
-                        <p>Verify cryptographic proof for a feed entry. Returns verification status and proof details.</p>
-                    </div>
-                    <div class="endpoint-item">
-                        <code class="endpoint-method">GET</code>
-                        <code class="endpoint-path">oracle.getProofStatus(feedId)</code>
-                        <p>Get proof verification status for a feed including coverage and consensus.</p>
-                    </div>
-                </div>
-                <div class="api-example">
-                    <h3>Usage Example</h3>
-                    <div class="code-block-large">
-                        <div class="code-header">
-                            <span class="code-lang">javascript</span>
-                            <button class="copy-btn">Copy</button>
-                        </div>
-                        <pre><code>const api = new ProtocolAPI();
-api.init(bridge);
-
-const status = await api.getStatus();
-
-const result = await api.bridgeZecToSolana(1.0, 'recipient-address');
-
-const payment = await api.sendPayment(
-    0.01, 
-    'recipient-address',
-    'memo-text'
-);
-
-const txStatus = await api.checkTransaction('txid-or-signature');
-
-const integrity = await api.getPoolIntegrity();
-
-const transactions = await api.getRecentTransactions(10);
-
-// Oracle API Examples
-const btcPrice = oracle.getPriceFeed('BTC');
-const allFeeds = oracle.getAllPriceFeeds();
-const stats = oracle.getStats();
-
-await oracle.submitDataFeed('BTC-USD-PRICE', 45000.50, walletAddress);
-await oracle.registerNode(walletAddress, { name: 'My Oracle Node' });
-await oracle.stake(walletAddress, 100);
-
-// Proof Verification Examples
-const proofStatus = oracle.getProofStatus('BTC-USD-PRICE');
-const verification = await oracle.verifyFeedProof('BTC-USD-PRICE', 0);
-const consensus = oracle.getFeedConsensus('BTC-USD-PRICE');</code></pre>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    
-    <section class="features-section">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">// features</span>
-                <h2 class="section-title">Why Choose Our Protocol</h2>
-            </div>
-            <div class="features-grid">
-                <div class="feature-item">
-                    <div class="feature-icon"></div>
-                    <h3>Complete Privacy</h3>
-                    <p>Zero-knowledge proofs ensure your transactions remain private. No one can trace your activity.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"></div>
-                    <h3>Lightning Fast</h3>
-                    <p>Leverage Solana's high throughput. Bridge and trade in seconds, not minutes.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"></div>
-                    <h3>Low Fees</h3>
-                    <p>Minimal transaction costs. Pay fractions of a cent, not dollars.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"></div>
-                    <h3>Non-Custodial</h3>
-                    <p>You control your keys. Smart contracts handle verification. No middlemen.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"></div>
-                    <h3>Composable</h3>
-                    <p>Works with any Solana DeFi protocol. Swap, lend, or provide liquidity seamlessly.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"></div>
-                    <h3>Transparent</h3>
-                    <p>All code is open source. Verify everything yourself. Trust through transparency.</p>
                 </div>
             </div>
         </div>
@@ -1436,138 +567,54 @@ const consensus = oracle.getFeedConsensus('BTC-USD-PRICE');</code></pre>
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                    <div class="footer-brand">
-                    <div class="footer-logo">ZCASH<span class="accent">→</span>SOL</div>
-                    <p>Blockchain Oracle & Private Cross-Chain Protocol</p>
+                <div class="footer-section">
+                    <h4>CryptoCommerce SDK</h4>
+                    <p>Cryptocurrency payment integration for modern ecommerce platforms.</p>
                 </div>
-                <div class="footer-links">
-                    <div class="footer-column">
-                        <h4>Protocol</h4>
-                        <a href="#protocol">How It Works</a>
-                        <a href="#proof">Proof</a>
-                        <a href="#docs">Documentation</a>
-                    </div>
-                    <div class="footer-column">
-                        <h4>Resources</h4>
-                        <a href="https://github.com/abdelrahman147/zcashhh" target="_blank" rel="noopener noreferrer">GitHub</a>
-                    </div>
-                    <div class="footer-column">
-                        <h4>Community</h4>
-                        <a href="https://x.com/Zecitsolana" target="_blank" rel="noopener noreferrer">X (Twitter)</a>
-                    </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#docs">Documentation</a></li>
+                        <li><a href="#api">API Reference</a></li>
+                        <li><a href="#examples">Examples</a></li>
+                        <li><a href="#">GitHub</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Contact</a></li>
+                        <li><a href="#">Status</a></li>
+                    </ul>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>© 2024 ZCash → Solana Protocol. <a href="http://zecit.online/" style="color: var(--accent-primary); text-decoration: none;">zecit.online</a></p>
+                <p>&copy; 2025 CryptoCommerce SDK. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <script>
-        (function() {
-            if (typeof global === 'undefined') {
-                window.global = window;
-            }
-            
-            if (typeof Buffer === 'undefined') {
-                window.Buffer = {
-                    from: function(data, encoding) {
-                        if (typeof data === 'string') {
-                            const encoder = new TextEncoder();
-                            const uint8Array = encoder.encode(data);
-                            const buffer = new Uint8Array(uint8Array.length);
-                            buffer.set(uint8Array);
-                            return buffer;
-                        }
-                        if (data instanceof ArrayBuffer) {
-                            return new Uint8Array(data);
-                        }
-                        if (data instanceof Uint8Array) {
-                            return data;
-                        }
-                        if (Array.isArray(data)) {
-                            return new Uint8Array(data);
-                        }
-                        return new Uint8Array(0);
-                    },
-                    isBuffer: function(obj) {
-                        return obj instanceof Uint8Array || (obj && obj.constructor && obj.constructor.name === 'Buffer');
-                    },
-                    alloc: function(size, fill) {
-                        const buffer = new Uint8Array(size);
-                        if (fill !== undefined) {
-                            buffer.fill(fill);
-                        }
-                        return buffer;
-                    },
-                    concat: function(arrays, totalLength) {
-                        if (!Array.isArray(arrays)) {
-                            throw new TypeError('First argument must be an array');
-                        }
-                        const length = totalLength !== undefined ? totalLength : arrays.reduce((sum, arr) => sum + arr.length, 0);
-                        const result = new Uint8Array(length);
-                        let offset = 0;
-                        for (const arr of arrays) {
-                            const uint8Arr = arr instanceof Uint8Array ? arr : new Uint8Array(arr);
-                            result.set(uint8Arr, offset);
-                            offset += uint8Arr.length;
-                        }
-                        return result;
-                    },
-                    allocUnsafe: function(size) {
-                        return new Uint8Array(size);
-                    }
-                };
-                
-                window.Buffer.prototype = Uint8Array.prototype;
-                window.global.Buffer = window.Buffer;
-            }
-        })();
-    </script>
     <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
-    <script>
-        window.solanaWeb3 = solanaWeb3;
-        if (typeof Buffer === 'undefined' && typeof window.Buffer !== 'undefined') {
-            window.Buffer = window.Buffer;
-            if (typeof global !== 'undefined') {
-                global.Buffer = window.Buffer;
-            }
-        }
-    </script>
-    <script>
-        if (typeof CONFIG === 'undefined') {
-            window.CONFIG = {
-                SOLANA_RPC: [
-                    'https://api.mainnet-beta.solana.com',
-                    'https://rpc.ankr.com/solana',
-                    'https://solana.public-rpc.com'
-                ],
-                ZCASH_RPC: {
-                    URL: 'https://zec.nownodes.io',
-                    USER: '',
-                    PASSWORD: ''
-                },
-                GOOGLE_SHEETS: {
-                    SHEET_ID: '',
-                    API_KEY: ''
-                }
-            };
-        }
-    </script>
     <script src="config.js" onerror="console.log('config.js not found, using defaults')"></script>
     <script src="bridge-service.js"></script>
-        <script src="test-suite.js"></script>
-        <script src="api-service.js"></script>
-        <script src="api-test-suite.js"></script>
-        <script src="oracle-service.js"></script>
-        <script src="mini-game.js"></script>
-        <script src="anti-cheat.js"></script>
-        <script src="leaderboard-service.js"></script>
-        <script src="leaderboard-sheets.js"></script>
-        <script src="leaderboard-backend.js"></script>
-        <script src="test-production.js"></script>
-        <script src="script.js"></script>
-    <script src="stress-test.js"></script>
+    <script src="api-service.js"></script>
+    <script src="oracle-service.js"></script>
+    <script src="mini-game.js"></script>
+    <script src="anti-cheat.js"></script>
+    <script src="zec-oracle.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="solana-pay-integration.js"></script>
+    <script src="webhook-system.js"></script>
+    <script src="oracle-frontend.js"></script>
+    <script src="merchant-api.js"></script>
+    <script src="merchant-dashboard.js"></script>
+    <script src="cryptocommerce-sdk.js"></script>
+    <script src="leaderboard-service.js"></script>
+    <script src="leaderboard-sheets.js"></script>
+    <script src="leaderboard-backend.js"></script>
+    <script src="payment-storage.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
-

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Google Sheets API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .test-section {
+            background: #16213e;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #0f3460;
+        }
+        button {
+            background: #00adb5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #007a7d;
+        }
+        .log {
+            background: #0a0a0a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .warning { color: #ffaa00; }
+        .info { color: #00aaff; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Google Sheets API Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Check LeaderboardBackend is Available</h2>
+        <button onclick="testLeaderboardBackend()">Test LeaderboardBackend</button>
+        <div id="test1-log" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Submit Test Score</h2>
+        <button onclick="testSubmitScore()">Submit Test Score</button>
+        <div id="test2-log" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Read Scores from Sheet</h2>
+        <button onclick="testReadScores()">Read Scores</button>
+        <div id="test3-log" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Full Game Flow Simulation</h2>
+        <input type="text" id="test-wallet" placeholder="Wallet address (or leave empty for test wallet)" style="width: 100%; padding: 10px; margin: 10px 0; background: #0a0a0a; border: 1px solid #00adb5; color: #eee; border-radius: 5px;">
+        <button onclick="testFullGameFlow()">Simulate Full Game Flow</button>
+        <div id="test4-log" class="log"></div>
+    </div>
+
+    <script src="config.js" onerror="console.log('config.js not found')"></script>
+    <script src="leaderboard-backend.js"></script>
+
+    <script>
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            element.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clear(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        async function testLeaderboardBackend() {
+            clear('test1-log');
+            log('test1-log', '🔍 Testing LeaderboardBackend availability...', 'info');
+            
+            if (typeof LeaderboardBackend === 'undefined') {
+                log('test1-log', '❌ LeaderboardBackend is NOT defined', 'error');
+                log('test1-log', '   Make sure leaderboard-backend.js is loaded', 'error');
+                return;
+            }
+            
+            log('test1-log', '✅ LeaderboardBackend is defined', 'success');
+            
+            try {
+                const service = new LeaderboardBackend();
+                log('test1-log', '✅ LeaderboardBackend instance created', 'success');
+                log('test1-log', `   API Base: ${service.apiBase}`, 'info');
+                log('test1-log', `   Sheet ID: ${service.sheetId}`, 'info');
+                
+                // Test if the API endpoint is reachable
+                log('test1-log', '🔗 Testing API endpoint reachability...', 'info');
+                try {
+                    const response = await fetch(`${service.apiBase}/scores?sheetId=${service.sheetId}`);
+                    log('test1-log', `   Response Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log('test1-log', `   Response: ${JSON.stringify(data, null, 2)}`, 'success');
+                    } else {
+                        const errorText = await response.text();
+                        log('test1-log', `   Error: ${errorText}`, 'error');
+                    }
+                } catch (error) {
+                    log('test1-log', `❌ Endpoint Error: ${error.message}`, 'error');
+                }
+            } catch (error) {
+                log('test1-log', `❌ Error creating instance: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSubmitScore() {
+            clear('test2-log');
+            log('test2-log', '📝 Testing score submission...', 'info');
+            
+            if (typeof LeaderboardBackend === 'undefined') {
+                log('test2-log', '❌ LeaderboardBackend is NOT available', 'error');
+                return;
+            }
+            
+            const service = new LeaderboardBackend();
+            const testWallet = 'TestWallet' + Math.random().toString(36).substring(7);
+            const testScore = Math.floor(Math.random() * 1000);
+            const testTime = 30000; // 30 seconds
+            
+            log('test2-log', `🎮 Submitting test score...`, 'info');
+            log('test2-log', `   Wallet: ${testWallet}`, 'info');
+            log('test2-log', `   Score: ${testScore}`, 'info');
+            log('test2-log', `   Time: ${testTime}ms`, 'info');
+            
+            try {
+                const result = await service.submitScore(
+                    testWallet,
+                    testScore,
+                    testTime,
+                    'test-signature-' + Date.now(),
+                    1
+                );
+                
+                log('test2-log', `📥 Result: ${JSON.stringify(result, null, 2)}`, result.success ? 'success' : 'error');
+                
+                if (result.success) {
+                    log('test2-log', '✅ Score submitted successfully!', 'success');
+                    log('test2-log', '   Check the Google Sheet to verify the entry', 'info');
+                } else {
+                    log('test2-log', `❌ Submission failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log('test2-log', `❌ Exception: ${error.message}`, 'error');
+                log('test2-log', `   Stack: ${error.stack}`, 'error');
+            }
+        }
+
+        async function testReadScores() {
+            clear('test3-log');
+            log('test3-log', '📖 Testing score reading...', 'info');
+            
+            if (typeof LeaderboardBackend === 'undefined') {
+                log('test3-log', '❌ LeaderboardBackend is NOT available', 'error');
+                return;
+            }
+            
+            const service = new LeaderboardBackend();
+            
+            try {
+                log('test3-log', '🔍 Fetching scores...', 'info');
+                const scores = await service.getScores(10);
+                
+                log('test3-log', `📊 Retrieved ${scores.length} scores`, scores.length > 0 ? 'success' : 'warning');
+                
+                if (scores.length > 0) {
+                    log('test3-log', `\n📋 Top scores:`, 'info');
+                    scores.forEach((score, index) => {
+                        log('test3-log', `   ${index + 1}. ${score.wallet?.substring(0, 12)}... - ${score.score} points`, 'info');
+                    });
+                } else {
+                    log('test3-log', '   No scores found in the sheet', 'warning');
+                    log('test3-log', '   This might be normal if no games have been played yet', 'warning');
+                }
+            } catch (error) {
+                log('test3-log', `❌ Exception: ${error.message}`, 'error');
+                log('test3-log', `   Stack: ${error.stack}`, 'error');
+            }
+        }
+
+        async function testFullGameFlow() {
+            clear('test4-log');
+            log('test4-log', '🎮 Simulating full game flow...', 'info');
+            
+            const wallet = document.getElementById('test-wallet').value || 
+                          'TestWallet' + Math.random().toString(36).substring(7);
+            
+            log('test4-log', `👤 Using wallet: ${wallet}`, 'info');
+            
+            // Simulate game
+            log('test4-log', '\n🎯 Step 1: Starting game...', 'info');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            log('test4-log', '   ✅ Game started', 'success');
+            
+            log('test4-log', '\n🎮 Step 2: Playing game (simulating 3 seconds)...', 'info');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            log('test4-log', '   ✅ Game in progress...', 'success');
+            
+            const finalScore = Math.floor(Math.random() * 500) + 100;
+            const gameDuration = 3000 + Math.floor(Math.random() * 2000);
+            
+            log('test4-log', '\n💀 Step 3: Game over (lost all lives)...', 'info');
+            log('test4-log', `   Final Score: ${finalScore}`, 'info');
+            log('test4-log', `   Duration: ${gameDuration}ms`, 'info');
+            
+            log('test4-log', '\n💾 Step 4: Saving score to Google Sheets...', 'info');
+            
+            if (typeof LeaderboardBackend === 'undefined') {
+                log('test4-log', '❌ LeaderboardBackend not available!', 'error');
+                return;
+            }
+            
+            const service = new LeaderboardBackend();
+            
+            try {
+                const result = await service.submitScore(
+                    wallet,
+                    finalScore,
+                    gameDuration,
+                    'game-' + Date.now(),
+                    Math.min(1 + Math.floor(finalScore / 100), 5)
+                );
+                
+                log('test4-log', `   Result: ${JSON.stringify(result, null, 2)}`, result.success ? 'success' : 'error');
+                
+                if (result && result.success) {
+                    log('test4-log', '\n✅ SUCCESS! Score saved to Google Sheets!', 'success');
+                    log('test4-log', '   🎉 The full game flow works correctly!', 'success');
+                    log('test4-log', '   📊 Check the Google Sheet to verify the entry', 'info');
+                } else {
+                    log('test4-log', '\n❌ FAILED! Score not saved', 'error');
+                    log('test4-log', `   Error: ${result?.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                log('test4-log', `\n❌ Exception during save: ${error.message}`, 'error');
+                log('test4-log', `   Stack: ${error.stack}`, 'error');
+            }
+        }
+
+        // Auto-run initial tests
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('test1-log', '🚀 Auto-running initial test...', 'info');
+                testLeaderboardBackend();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+

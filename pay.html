@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - CryptoCommerce SDK</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" style="max-width: 600px; margin: 2rem auto; padding: 2rem;">
+        <div id="payment-page-content">
+            <h2>Loading payment...</h2>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script>
+        async function loadPaymentLink() {
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            let linkId = pathParts[pathParts.length - 1];
+            
+            // Handle /pay/link_xxx format
+            if (pathParts.length >= 2 && pathParts[pathParts.length - 2] === 'pay') {
+                linkId = pathParts[pathParts.length - 1];
+            }
+            
+            if (!linkId || linkId === 'pay' || linkId === 'pay.html') {
+                document.getElementById('payment-page-content').innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <h2 style="color: var(--accent-error);">Invalid Payment Link</h2>
+                        <p>This payment link is invalid or has expired.</p>
+                        <a href="/" class="btn-primary" style="margin-top: 1rem; display: inline-block;">Go Home</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                console.log('Loading payment link:', linkId);
+                const response = await fetch(`/api/payment-links/${linkId}`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Payment link not found');
+                }
+                
+                const data = await response.json();
+                const link = data.link;
+                
+                if (!link) {
+                    throw new Error('Payment link data not found');
+                }
+                
+                // Get payment details
+                let payment = null;
+                if (link.paymentId) {
+                    try {
+                        const paymentResponse = await fetch(`/api/oracle/payments/${link.paymentId}`);
+                        if (paymentResponse.ok) {
+                            const paymentData = await paymentResponse.json();
+                            payment = paymentData.payment;
+                        }
+                    } catch (err) {
+                        console.warn('Could not fetch payment details:', err);
+                    }
+                }
+                
+                displayPaymentPage(link, payment);
+            } catch (error) {
+                console.error('Failed to load payment link:', error);
+                document.getElementById('payment-page-content').innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <h2 style="color: var(--accent-error);">Payment Link Not Found</h2>
+                        <p>${error.message || 'This payment link may have expired or is invalid.'}</p>
+                        <a href="/" class="btn-primary" style="margin-top: 1rem; display: inline-block;">Go Home</a>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayPaymentPage(link, payment) {
+            const content = document.getElementById('payment-page-content');
+            
+            if (!payment) {
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <h2 style="color: var(--accent-error);">Payment Not Found</h2>
+                        <p>The payment associated with this link could not be found.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const solAmount = payment.solAmount || payment.amount || 0;
+            const token = payment.token || 'SOL';
+            
+            content.innerHTML = `
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;">
+                    <h2 style="margin-bottom: 1.5rem;">Payment Request</h2>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--text-secondary);">Amount:</span>
+                            <span style="font-weight: 600;">$${payment.amount.toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--text-secondary);">Token Amount:</span>
+                            <span style="font-weight: 600; color: var(--accent-primary);">${solAmount.toFixed(8)} ${token}</span>
+                        </div>
+                        ${payment.orderId ? `
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-secondary);">Order ID:</span>
+                            <span style="font-family: var(--font-mono); font-size: 0.9rem;">${payment.orderId}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem;">
+                        <h4 style="margin-bottom: 1rem;">QR Code</h4>
+                        <div id="qr-code-container" style="display: flex; justify-content: center; margin-bottom: 1rem;"></div>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 1rem;">
+                            Scan with your Solana wallet to pay
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button class="btn-primary" id="pay-with-wallet-btn" style="width: 100%; margin-bottom: 1rem;">
+                            Pay with Wallet
+                        </button>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                            Or scan the QR code above
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            // Generate QR code
+            if (window.QRCode && link.qrCode) {
+                const qrContainer = document.getElementById('qr-code-container');
+                const qrText = link.qrCode.url || link.qrCode.data || link.url;
+                if (qrText) {
+                    window.QRCode.toCanvas(qrContainer, qrText, {
+                        width: 256,
+                        margin: 2,
+                        color: {
+                            dark: '#000000',
+                            light: '#ffffff'
+                        }
+                    }, function (error) {
+                        if (error) {
+                            console.error('QR code generation error:', error);
+                            // Fallback: create img element
+                            qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrText)}" alt="QR Code" style="max-width: 100%; height: auto;">`;
+                        }
+                    });
+                }
+            } else if (link.qrCode) {
+                // Fallback: use external QR code service
+                const qrContainer = document.getElementById('qr-code-container');
+                const qrText = link.qrCode.url || link.qrCode.data || link.url;
+                qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrText)}" alt="QR Code" style="max-width: 100%; height: auto;">`;
+            }
+            
+            // Pay with wallet button
+            const payBtn = document.getElementById('pay-with-wallet-btn');
+            if (payBtn) {
+                payBtn.addEventListener('click', async () => {
+                    // Wait for SolanaWeb3 to load
+                    if (typeof window.SolanaWeb3 === 'undefined') {
+                        alert('Solana library is loading. Please wait a moment and try again.');
+                        return;
+                    }
+                    
+                    if (!window.solana || !window.solana.isPhantom) {
+                        alert('Please install Phantom wallet to pay');
+                        return;
+                    }
+                    
+                    try {
+                        payBtn.disabled = true;
+                        payBtn.textContent = 'Connecting...';
+                        
+                        // Connect to wallet
+                        const connectResponse = await window.solana.connect();
+                        const publicKey = new window.SolanaWeb3.PublicKey(connectResponse.publicKey.toString());
+                        
+                        if (!payment || !payment.merchantAddress) {
+                            alert('Payment error: Merchant address not found');
+                            payBtn.disabled = false;
+                            payBtn.textContent = 'Pay with Wallet';
+                            return;
+                        }
+                        
+                        const merchantPubkey = new window.SolanaWeb3.PublicKey(payment.merchantAddress);
+                        
+                        // Calculate lamports (handle different tokens)
+                        let lamports = 0;
+                        if (token === 'SOL') {
+                            lamports = Math.floor(solAmount * 1e9);
+                        } else {
+                            // For SPL tokens, would need different handling
+                            lamports = Math.floor(solAmount * 1e9); // Default to SOL for now
+                        }
+                        
+                        payBtn.textContent = 'Preparing transaction...';
+                        
+                        // Create connection
+                        const connection = new window.SolanaWeb3.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+                        
+                        // Get recent blockhash
+                        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+                        
+                        // Create transaction
+                        const transaction = new window.SolanaWeb3.Transaction({
+                            feePayer: publicKey,
+                            recentBlockhash: blockhash
+                        }).add(
+                            window.SolanaWeb3.SystemProgram.transfer({
+                                fromPubkey: publicKey,
+                                toPubkey: merchantPubkey,
+                                lamports: lamports
+                            })
+                        );
+                        
+                        payBtn.textContent = 'Confirm in wallet...';
+                        
+                        // Sign and send transaction
+                        // signAndSendTransaction returns { signature: '...' }
+                        const result = await window.solana.signAndSendTransaction(transaction);
+                        const signature = result.signature || result;
+                        
+                        // Wait for confirmation
+                        await connection.confirmTransaction({
+                            signature: signature,
+                            blockhash: blockhash,
+                            lastValidBlockHeight: lastValidBlockHeight
+                        }, 'confirmed');
+                        
+                        payBtn.textContent = 'Notifying backend...';
+                        
+                        // Notify backend about the payment
+                        try {
+                            const verifyResponse = await fetch(`/api/oracle/payments/${payment.id}/verify`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ signature: signature })
+                            });
+                            
+                            if (!verifyResponse.ok) {
+                                console.warn('Backend verification failed:', await verifyResponse.text());
+                            }
+                        } catch (err) {
+                            console.warn('Failed to notify backend:', err);
+                        }
+                        
+                        alert(`Payment sent successfully! Transaction: ${signature}`);
+                        window.location.href = '/';
+                    } catch (error) {
+                        console.error('Payment error:', error);
+                        let errorMessage = 'Payment failed: ';
+                        
+                        if (error.message) {
+                            errorMessage += error.message;
+                        } else if (error.toString) {
+                            errorMessage += error.toString();
+                        } else {
+                            errorMessage += 'Unknown error occurred';
+                        }
+                        
+                        alert(errorMessage);
+                        payBtn.disabled = false;
+                        payBtn.textContent = 'Pay with Wallet';
+                    }
+                });
+            }
+        }
+        
+        // Wait for SolanaWeb3 to load before initializing
+        function waitForSolanaWeb3() {
+            if (typeof window.SolanaWeb3 !== 'undefined') {
+                loadPaymentLink();
+            } else {
+                setTimeout(waitForSolanaWeb3, 100);
+            }
+        }
+        
+        // Start loading payment link
+        waitForSolanaWeb3();
+    </script>
+</body>
+</html>
+

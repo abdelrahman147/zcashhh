@@ -47,11 +47,38 @@ exports.handler = async function(event, context) {
         // Get access token
         const accessToken = await getAccessToken(serviceAccount);
 
-        const path = event.path.replace('/.netlify/functions/sheets-proxy', '');
+        // Handle payment storage endpoints
+        if (event.path.includes('/payment') || event.path.includes('/payments')) {
+            return await handlePaymentStorage(event, accessToken, serviceAccount);
+        }
+        
+        // Extract path - handle both direct function calls and redirects
+        let path = event.path || '';
+        
+        // Remove function base path
+        if (path.includes('/sheets-proxy')) {
+            // Extract everything after /sheets-proxy
+            const parts = path.split('/sheets-proxy');
+            path = parts.length > 1 ? parts[1] : '';
+        } else if (path.startsWith('/api/sheets')) {
+            path = path.replace('/api/sheets', '');
+        }
+        
+        // Normalize path - remove leading slash, add if needed for matching
+        path = path.replace(/^\/+/, ''); // Remove leading slashes
+        if (path && !path.startsWith('/')) {
+            path = '/' + path; // Add leading slash for matching
+        }
+        if (!path) {
+            path = '';
+        }
+        
         const sheetId = event.queryStringParameters?.sheetId || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8';
 
+        console.log(`[Sheets Proxy] Path: ${event.path} -> ${path}, Method: ${event.httpMethod}`);
+
         // Handle different operations
-        if (event.httpMethod === 'GET' && path === '/scores') {
+        if (event.httpMethod === 'GET' && (path === '/scores' || path === 'scores')) {
             // Read scores
             const response = await fetch(
                 `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1!A2:H1000`,
@@ -87,7 +114,7 @@ exports.handler = async function(event, context) {
                 body: JSON.stringify({ success: true, scores })
             };
         } 
-        else if (event.httpMethod === 'POST' && path === '/submit') {
+        else if (event.httpMethod === 'POST' && (path === '/submit' || path === 'submit')) {
             // Submit score
             const body = JSON.parse(event.body);
             const { wallet, score, time, signature, difficulty = 1 } = body;
@@ -149,10 +176,19 @@ exports.handler = async function(event, context) {
             };
         } 
         else {
+            console.log(`[Sheets Proxy] 404 - Path: ${path}, Method: ${event.httpMethod}, Full path: ${event.path}`);
             return {
                 statusCode: 404,
                 headers,
-                body: JSON.stringify({ error: 'Not found' })
+                body: JSON.stringify({ 
+                    error: 'Not found',
+                    debug: {
+                        path: path,
+                        eventPath: event.path,
+                        method: event.httpMethod,
+                        queryParams: event.queryStringParameters
+                    }
+                })
             };
         }
     } catch (error) {
@@ -181,7 +217,7 @@ async function getAccessToken(serviceAccount) {
     const now = Math.floor(Date.now() / 1000);
     const jwtClaimSet = {
         iss: serviceAccount.client_email,
-        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
         aud: serviceAccount.token_uri,
         exp: now + 3600,
         iat: now
@@ -210,5 +246,571 @@ async function getAccessToken(serviceAccount) {
     }
 
     return data.access_token;
+}
+
+/**
+ * Handle payment storage operations
+ */
+async function handlePaymentStorage(event, accessToken, serviceAccount) {
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+        'Content-Type': 'application/json'
+    };
+
+    if (event.httpMethod === 'OPTIONS') {
+        return { statusCode: 200, headers, body: '' };
+    }
+
+    try {
+        const body = event.body ? JSON.parse(event.body) : {};
+        // For payments, if no sheetId provided, create a new one (separate from leaderboard)
+        let sheetId = body.sheetId || event.queryStringParameters?.sheetId;
+        const sheetName = body.sheetName || event.queryStringParameters?.sheetName || 'payment';
+        
+        // If no sheet ID provided for payments, we'll create a new one
+        if (!sheetId && event.path.includes('/payment')) {
+            sheetId = null; // Will trigger new sheet creation
+        }
+
+        if (event.httpMethod === 'POST' && event.path.includes('/payment')) {
+            // Save payment
+            const payment = body.payment;
+            if (!payment) {
+                return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: 'Payment data required' }) };
+            }
+
+            // For payments, always create a new sheet if no sheetId provided (separate from leaderboard)
+            let actualSheetId;
+            if (!sheetId) {
+                // Create a brand new sheet for payments
+                actualSheetId = await createNewPaymentSheet(accessToken);
+            } else {
+                // Use existing sheet or create tab if needed
+                actualSheetId = await ensurePaymentSheet(sheetId, sheetName, accessToken);
+            }
+
+            // Append payment row
+            const values = [
+                payment.id,
+                payment.amount,
+                payment.currency || 'USD',
+                payment.token || 'SOL',
+                payment.solAmount || payment.amount,
+                payment.orderId || '',
+                payment.merchantAddress || '',
+                payment.status,
+                payment.transactionSignature || '',
+                new Date(payment.createdAt).toISOString(),
+                payment.confirmedAt ? new Date(payment.confirmedAt).toISOString() : '',
+                JSON.stringify(payment.proof || {})
+            ];
+
+            const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${actualSheetId}/values/${sheetName}!A:append?valueInputOption=RAW`;
+            const appendResponse = await fetch(appendUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ values: [values] })
+            });
+
+            if (!appendResponse.ok) {
+                throw new Error(`Failed to append payment: ${await appendResponse.text()}`);
+            }
+
+            return { 
+                statusCode: 200, 
+                headers, 
+                body: JSON.stringify({ 
+                    success: true, 
+                    sheetId: actualSheetId,
+                    sheetUrl: `https://docs.google.com/spreadsheets/d/${actualSheetId}/edit`
+                }) 
+            };
+        } else if (event.httpMethod === 'GET' && event.path.includes('/payment/fix-headers')) {
+            // Fix headers immediately - force fix regardless of current state
+            if (!sheetId) {
+                return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: 'Sheet ID required' }) };
+            }
+            try {
+                // First, get the actual tab names from the sheet
+                const metadataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+                const metadataResponse = await fetch(metadataUrl, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                if (!metadataResponse.ok) {
+                    throw new Error(`Failed to get sheet metadata: ${await metadataResponse.text()}`);
+                }
+                
+                const metadata = await metadataResponse.json();
+                const actualTabNames = metadata.sheets?.map(s => s.properties.title) || [];
+                console.log(`Found tabs: ${actualTabNames.join(', ')}`);
+                
+                // Find the payment tab (case-insensitive)
+                const paymentTab = actualTabNames.find(t => t.toLowerCase() === 'payment') || actualTabNames.find(t => t.toLowerCase().includes('payment')) || 'payment';
+                const paymentSheetId = metadata.sheets?.find(s => s.properties.title === paymentTab)?.properties.sheetId;
+                console.log(`Using tab: ${paymentTab}, sheetId: ${paymentSheetId}`);
+                
+                // Force update headers by directly calling the update API
+                const correctHeaders = [
+                    'Payment ID', 'Amount (USD)', 'Currency', 'Token', 'Token Amount',
+                    'Order ID', 'Merchant Address', 'Status', 'Transaction Signature',
+                    'Created At', 'Confirmed At', 'ZK Proof'
+                ];
+                
+                // Update headers with explicit column widths to prevent truncation
+                const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(paymentTab)}!A1:L1?valueInputOption=RAW`;
+                const updateResponse = await fetch(updateUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: [correctHeaders]
+                    })
+                });
+                
+                // Also update column widths to prevent truncation
+                const batchUpdateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`;
+                await fetch(batchUpdateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        requests: [
+                            {
+                                updateDimensionProperties: {
+                                    range: {
+                                        sheetId: paymentSheetId,
+                                        dimension: 'COLUMNS',
+                                        startIndex: 8, // Column I (0-indexed, so I=8)
+                                        endIndex: 9   // Column J
+                                    },
+                                    properties: {
+                                        pixelSize: 200 // Set width to 200px to show full "Transaction Signature"
+                                    },
+                                    fields: 'pixelSize'
+                                }
+                            }
+                        ]
+                    })
+                }).catch(err => console.log('Could not update column width:', err));
+
+                if (!updateResponse.ok) {
+                    const errorText = await updateResponse.text();
+                    throw new Error(`Failed to update headers: ${errorText}`);
+                }
+                
+                const updateResult = await updateResponse.json();
+                
+                // Read back the updated headers to confirm - wait a moment for Google to sync
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                const verifyUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(paymentTab)}!A1:L1`;
+                const verifyResponse = await fetch(verifyUrl, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                let verifiedHeaders = [];
+                if (verifyResponse.ok) {
+                    const verifyData = await verifyResponse.json();
+                    verifiedHeaders = verifyData.values?.[0] || [];
+                    console.log('Verified headers after update:', JSON.stringify(verifiedHeaders));
+                } else {
+                    console.log('Could not verify headers:', await verifyResponse.text());
+                }
+                
+                // Also read specific columns to verify G and H are separate
+                const ghUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(paymentTab)}!G1:H1`;
+                const ghResponse = await fetch(ghUrl, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                let ghHeaders = [];
+                if (ghResponse.ok) {
+                    const ghData = await ghResponse.json();
+                    ghHeaders = ghData.values?.[0] || [];
+                }
+                
+                return { 
+                    statusCode: 200, 
+                    headers, 
+                    body: JSON.stringify({ 
+                        success: true, 
+                        message: 'Headers fixed successfully',
+                        sheetId: sheetId,
+                        tabName: paymentTab,
+                        actualTabs: actualTabNames,
+                        result: updateResult,
+                        verifiedHeaders: verifiedHeaders,
+                        columnsGH: ghHeaders,
+                        columnG: verifiedHeaders[6] || 'missing',
+                        columnH: verifiedHeaders[7] || 'missing',
+                        columnI: verifiedHeaders[8] || 'missing',
+                        columnJ: verifiedHeaders[9] || 'missing'
+                    }) 
+                };
+            } catch (error) {
+                return { 
+                    statusCode: 500, 
+                    headers, 
+                    body: JSON.stringify({ success: false, error: error.message }) 
+                };
+            }
+        } else if (event.httpMethod === 'GET' && event.path.includes('/payments')) {
+            // Load all payments
+            if (!sheetId) {
+                // No sheet ID means no payments yet
+                return { statusCode: 200, headers, body: JSON.stringify({ success: true, payments: [] }) };
+            }
+            const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A2:L`;
+            const readResponse = await fetch(readUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            if (!readResponse.ok) {
+                if (readResponse.status === 400) {
+                    // Sheet doesn't exist, return empty
+                    return { statusCode: 200, headers, body: JSON.stringify({ success: true, payments: [] }) };
+                }
+                throw new Error(`Failed to read payments: ${await readResponse.text()}`);
+            }
+
+            const data = await readResponse.json();
+            const rows = data.values || [];
+            
+            const payments = rows.map(row => ({
+                id: row[0] || '',
+                amount: parseFloat(row[1] || 0),
+                currency: row[2] || 'USD',
+                token: row[3] || 'SOL',
+                solAmount: parseFloat(row[4] || 0),
+                orderId: row[5] || '',
+                merchantAddress: row[6] || '',
+                status: row[7] || 'pending',
+                transactionSignature: row[8] || '',
+                createdAt: new Date(row[9] || Date.now()).getTime(),
+                confirmedAt: row[10] ? new Date(row[10]).getTime() : null,
+                proof: row[11] ? JSON.parse(row[11]) : null
+            })).filter(p => p.id); // Return all payments, not just verified
+
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, payments }) };
+        } else if (event.httpMethod === 'DELETE') {
+            // Delete payment (for expired pending payments)
+            const pathParts = event.path.split('/');
+            const paymentId = pathParts[pathParts.length - 1];
+            
+            if (!sheetId) {
+                return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'No sheet to delete from' }) };
+            }
+            
+            // Find the row containing this payment ID
+            // Payment ID is in column A (index 0)
+            const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A2:A`;
+            const readResponse = await fetch(readUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+            
+            if (!readResponse.ok) {
+                throw new Error(`Failed to read sheet: ${readResponse.statusText}`);
+            }
+            
+            const readData = await readResponse.json();
+            const rows = readData.values || [];
+            
+            // Find the row index (1-based, +1 for header row)
+            let rowIndex = -1;
+            for (let i = 0; i < rows.length; i++) {
+                if (rows[i] && rows[i][0] === paymentId) {
+                    rowIndex = i + 2; // +2 because: +1 for 0-based to 1-based, +1 for header row
+                    break;
+                }
+            }
+            
+            if (rowIndex === -1) {
+                // Payment not found in sheet, but that's okay (might have been deleted already)
+                return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'Payment not found in sheet (may have been deleted already)' }) };
+            }
+            
+            // Get the actual sheet (tab) ID for the payment tab
+            const spreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+            const spreadsheetResponse = await fetch(spreadsheetUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+            
+            if (!spreadsheetResponse.ok) {
+                throw new Error(`Failed to get spreadsheet info: ${spreadsheetResponse.statusText}`);
+            }
+            
+            const spreadsheetData = await spreadsheetResponse.json();
+            const paymentSheet = spreadsheetData.sheets.find(s => 
+                s.properties.title.toLowerCase() === sheetName.toLowerCase()
+            );
+            
+            if (!paymentSheet) {
+                throw new Error(`Payment sheet "${sheetName}" not found`);
+            }
+            
+            const actualSheetId = paymentSheet.properties.sheetId;
+            
+            // Delete the row using batchUpdate
+            const deleteUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`;
+            const deleteResponse = await fetch(deleteUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    requests: [{
+                        deleteDimension: {
+                            range: {
+                                sheetId: actualSheetId,
+                                dimension: 'ROWS',
+                                startIndex: rowIndex - 1, // 0-based index
+                                endIndex: rowIndex // Delete single row
+                            }
+                        }
+                    }]
+                })
+            });
+            
+            if (!deleteResponse.ok) {
+                const errorText = await deleteResponse.text();
+                console.error('Failed to delete row:', errorText);
+                // Try alternative: clear the row instead of deleting
+                const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A${rowIndex}:L${rowIndex}?valueInputOption=RAW`;
+                const clearResponse = await fetch(clearUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: [[]] // Empty row
+                    })
+                });
+                
+                if (!clearResponse.ok) {
+                    throw new Error(`Failed to delete/clear payment row: ${clearResponse.statusText}`);
+                }
+            }
+            
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, deletedRow: rowIndex }) };
+        }
+    } catch (error) {
+        console.error('Payment storage error:', error);
+        return { statusCode: 500, headers, body: JSON.stringify({ success: false, error: error.message }) };
+    }
+}
+
+/**
+ * Create a new Google Sheet for payments
+ */
+async function createNewPaymentSheet(accessToken) {
+    try {
+        const createUrl = 'https://sheets.googleapis.com/v4/spreadsheets';
+        const response = await fetch(createUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                properties: {
+                    title: 'Solana Payment Oracle - Payments Database'
+                },
+                sheets: [{
+                    properties: {
+                        title: 'payment',
+                        gridProperties: {
+                            rowCount: 1000,
+                            columnCount: 12
+                        }
+                    }
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Failed to create sheet: ${error}`);
+        }
+
+        const data = await response.json();
+        const newSheetId = data.spreadsheetId;
+        
+        // Add headers
+        const headersUrl = `https://sheets.googleapis.com/v4/spreadsheets/${newSheetId}/values/payment!A1:L1?valueInputOption=RAW`;
+        await fetch(headersUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                values: [[
+                    'Payment ID', 'Amount (USD)', 'Currency', 'Token', 'Token Amount',
+                    'Order ID', 'Merchant Address', 'Status', 'Transaction Signature',
+                    'Created At', 'Confirmed At', 'ZK Proof'
+                ]]
+            })
+        });
+
+        console.log(`✅ Created new payment sheet: ${newSheetId}`);
+        return newSheetId;
+    } catch (error) {
+        console.error('Failed to create new payment sheet:', error);
+        throw error;
+    }
+}
+
+/**
+ * Ensure payment sheet exists with headers
+ */
+async function ensurePaymentSheet(sheetId, sheetName, accessToken) {
+    try {
+        // Check if sheet exists
+        const metadataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+        const metadataResponse = await fetch(metadataUrl, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+
+        if (!metadataResponse.ok) {
+            // Sheet doesn't exist, create a new one
+            console.log('Sheet not found, creating new payment sheet...');
+            const newSheetId = await createNewPaymentSheet(accessToken);
+            return newSheetId;
+        }
+
+        const metadata = await metadataResponse.json();
+        const sheetExists = metadata.sheets?.some(s => s.properties.title === sheetName);
+
+        if (!sheetExists) {
+            // Create sheet tab
+            console.log(`Creating new sheet tab: ${sheetName}`);
+            const createSheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`;
+            const createResponse = await fetch(createSheetUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    requests: [{
+                        addSheet: {
+                            properties: {
+                                title: 'payment' // Use lowercase 'payment' to match existing tab
+                            }
+                        }
+                    }]
+                })
+            });
+
+            if (!createResponse.ok) {
+                throw new Error(`Failed to create sheet tab: ${await createResponse.text()}`);
+            }
+        }
+
+        // Ensure headers exist and are correct
+        const headersUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A1:L1`;
+        const headersResponse = await fetch(headersUrl, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+
+        const correctHeaders = [
+            'Payment ID', 'Amount (USD)', 'Currency', 'Token', 'Token Amount',
+            'Order ID', 'Merchant Address', 'Status', 'Transaction Signature',
+            'Created At', 'Confirmed At', 'ZK Proof'
+        ];
+
+        let needsHeaderFix = false;
+        let existingHeaders = [];
+
+        if (headersResponse.ok) {
+            const headersData = await headersResponse.json();
+            if (!headersData.values || headersData.values.length === 0) {
+                // No headers at all - add them
+                console.log('No headers found, will add them');
+                needsHeaderFix = true;
+            } else {
+                // Check if headers are correct
+                existingHeaders = headersData.values[0] || [];
+                console.log(`Found ${existingHeaders.length} existing headers`);
+                if (existingHeaders.length !== correctHeaders.length) {
+                    console.log(`Header count mismatch: ${existingHeaders.length} vs ${correctHeaders.length}`);
+                    needsHeaderFix = true;
+                } else {
+                    // Check each header matches
+                    for (let i = 0; i < correctHeaders.length; i++) {
+                        if (existingHeaders[i] !== correctHeaders[i]) {
+                            console.log(`Header mismatch at column ${i}: "${existingHeaders[i]}" vs "${correctHeaders[i]}"`);
+                            needsHeaderFix = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            // Can't read headers, try to add them
+            console.log(`Cannot read headers (status: ${headersResponse.status}), will add them`);
+            needsHeaderFix = true;
+        }
+
+        if (needsHeaderFix) {
+            // Fix/Add headers
+            console.log('Fixing headers in payment sheet...');
+            console.log(`Sheet ID: ${sheetId}, Tab: ${sheetName}`);
+            console.log(`Current headers: ${JSON.stringify(existingHeaders || [])}`);
+            console.log(`Correct headers: ${JSON.stringify(correctHeaders)}`);
+            
+            const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A1:L1?valueInputOption=RAW`;
+            const updateResponse = await fetch(updateUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    values: [correctHeaders]
+                })
+            });
+
+            if (!updateResponse.ok) {
+                const errorText = await updateResponse.text();
+                console.error(`Failed to fix headers. Status: ${updateResponse.status}`);
+                console.error(`Error: ${errorText}`);
+                throw new Error(`Failed to fix headers: ${errorText}`);
+            }
+            
+            const updateResult = await updateResponse.json();
+            console.log('✅ Headers fixed in payment sheet');
+            console.log(`Update result: ${JSON.stringify(updateResult)}`);
+        }
+
+        return sheetId;
+    } catch (error) {
+        console.error('Failed to ensure payment sheet:', error);
+        // Try to create a new sheet if the existing one fails
+        try {
+            console.log('Attempting to create new payment sheet...');
+            return await createNewPaymentSheet(accessToken);
+        } catch (createError) {
+            throw new Error(`Failed to ensure or create payment sheet: ${createError.message}`);
+        }
+    }
 }
 

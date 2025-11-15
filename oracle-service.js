@@ -402,12 +402,12 @@ class BlockchainOracle {
                 const batch = symbols.slice(i, i + batchSize);
                 await Promise.allSettled(
                     batch.map(async symbol => {
-                        try {
-                            const pythData = await this.fetchPythPrice(symbol);
-                            if (pythData && pythData.price) {
-                                this.pythFeeds.set(symbol.toUpperCase(), pythData);
-                            }
-                        } catch (error) {
+                try {
+                    const pythData = await this.fetchPythPrice(symbol);
+                    if (pythData && pythData.price) {
+                        this.pythFeeds.set(symbol.toUpperCase(), pythData);
+                    }
+                } catch (error) {
                             // Silent fail - Pyth doesn't have all pairs
                         }
                     })
@@ -431,12 +431,12 @@ class BlockchainOracle {
                 const batch = symbols.slice(i, i + batchSize);
                 await Promise.allSettled(
                     batch.map(async symbol => {
-                        try {
-                            const switchboardData = await this.fetchSwitchboardPrice(symbol);
-                            if (switchboardData && switchboardData.price) {
-                                this.switchboardFeeds.set(symbol.toUpperCase(), switchboardData);
-                            }
-                        } catch (error) {
+                try {
+                    const switchboardData = await this.fetchSwitchboardPrice(symbol);
+                    if (switchboardData && switchboardData.price) {
+                        this.switchboardFeeds.set(symbol.toUpperCase(), switchboardData);
+                    }
+                } catch (error) {
                             // Silent fail - Switchboard doesn't have all pairs
                         }
                     })
@@ -849,7 +849,7 @@ class BlockchainOracle {
                     symbols.add(symbol.baseAsset);
                     // Also add quote assets (USDT, BTC, ETH, BNB, BUSD, etc.)
                     if (['USDT', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'DAI', 'TUSD'].includes(symbol.quoteAsset)) {
-                        symbols.add(symbol.baseAsset);
+                    symbols.add(symbol.baseAsset);
                     }
                 }
             });
@@ -2579,11 +2579,11 @@ class BlockchainOracle {
                 // Use backend to send transaction if frontend connection unavailable
                 if (this.bridge.solanaConnection) {
                     try {
-                        signature = await this.bridge.solanaConnection.sendRawTransaction(signed.serialize(), {
-                            skipPreflight: false,
-                            maxRetries: 3,
-                            preflightCommitment: 'confirmed'
-                        });
+                signature = await this.bridge.solanaConnection.sendRawTransaction(signed.serialize(), {
+                    skipPreflight: false,
+                    maxRetries: 3,
+                    preflightCommitment: 'confirmed'
+                });
                     } catch (sendError) {
                         console.warn('Frontend send failed, using backend:', sendError.message);
                         // Fallback to backend
@@ -3320,9 +3320,9 @@ class BlockchainOracle {
                     if (!isTestNode && address && node) {
                         // Only load nodes with verified blockchain transactions OR zero stake
                         if (node.stakeSignature || node.stakeVerified || node.stake === 0) {
-                            this.nodes.set(address, node);
-                            this.nodeReputation.set(address, node.reputation || 100);
-                            this.nodeStakes.set(address, node.stake || 0);
+                    this.nodes.set(address, node);
+                    this.nodeReputation.set(address, node.reputation || 100);
+                    this.nodeStakes.set(address, node.stake || 0);
                         } else {
                             console.log(`Removed unverified node: ${address ? address.substring(0, 8) : 'unknown'} - no blockchain proof`);
                         }
@@ -3676,13 +3676,13 @@ class BlockchainOracle {
             
             // Only update if we got at least one piece of data
             if (onChainData.slot || onChainData.blockHeight || onChainData.totalSupply) {
-                this.onChainFeeds.set('solana', onChainData);
+            this.onChainFeeds.set('solana', onChainData);
                 console.log('✅ Solana on-chain data updated:', {
                     slot: onChainData.slot,
                     blockHeight: onChainData.blockHeight,
                     totalSupply: onChainData.totalSupply ? `${(onChainData.totalSupply / 1e9).toFixed(0)} SOL` : 'N/A'
                 });
-                return onChainData;
+            return onChainData;
             } else {
                 console.warn('⚠️ No Solana data retrieved from RPC');
                 return null;

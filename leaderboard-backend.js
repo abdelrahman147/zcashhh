@@ -5,7 +5,13 @@
 class LeaderboardBackend {
     constructor() {
         // Use relative URLs - works both locally and in production
-        this.apiBase = window.location.origin + '/api/sheets';
+        // Handle file:// protocol (local file) by using production URL
+        let origin = window.location.origin;
+        if (origin === 'null' || origin.startsWith('file://')) {
+            // If opened as file://, use production URL
+            origin = 'https://zecit.online';
+        }
+        this.apiBase = origin + '/api/sheets';
         this.sheetId = '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8';
         this.maxRetries = 3;
         this.retryCount = 0;
@@ -13,6 +19,10 @@ class LeaderboardBackend {
         console.log('✅ Backend-powered Google Sheets Leaderboard initialized');
         console.log(`   API Base: ${this.apiBase}`);
         console.log(`   Sheet ID: ${this.sheetId}`);
+        console.log(`\n📝 IMPORTANT: Make sure the service account has Editor access to the Google Sheet!`);
+        console.log(`   Service Account Email: meshnodelicense-185@gen-lang-client-0795253847.iam.gserviceaccount.com`);
+        console.log(`   Google Sheet: https://docs.google.com/spreadsheets/d/1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8/edit`);
+        console.log(`   → Click Share button and add the service account email as Editor`);
     }
 
     /**
@@ -48,6 +58,15 @@ class LeaderboardBackend {
                     console.log(`⏳ [Backend] Rate limited, retrying in ${1000 * this.retryCount}ms...`);
                     await new Promise(resolve => setTimeout(resolve, 1000 * this.retryCount));
                     return this.submitScore(wallet, score, time, signature, difficulty);
+                }
+
+                // Check for permission errors
+                if (response.status === 403) {
+                    console.error(`\n🚫 PERMISSION DENIED!`);
+                    console.error(`   The service account doesn't have access to the Google Sheet.`);
+                    console.error(`   Please add this email as Editor to the sheet:`);
+                    console.error(`   meshnodelicense-185@gen-lang-client-0795253847.iam.gserviceaccount.com`);
+                    console.error(`   Sheet URL: https://docs.google.com/spreadsheets/d/1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8/edit\n`);
                 }
 
                 return { success: false, error: errorData.error || `HTTP ${response.status}` };

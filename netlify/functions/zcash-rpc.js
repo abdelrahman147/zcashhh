@@ -86,17 +86,17 @@ exports.handler = async (event, context) => {
             
             if (!response.ok) {
                 const errorText = await response.text();
-            return {
-                statusCode: response.status,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
+                return {
+                    statusCode: response.status,
+                    headers: {
+                        'Access-Control-Allow-Origin': '*',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
                     error: `RPC HTTP ${response.status}: ${errorText}`,
                     result: null
-                })
-            };
+                    })
+                };
             }
             
             const data = await response.json();
