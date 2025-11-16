@@ -324,9 +324,11 @@ class SolanaPaymentOracle {
                 console.log(`✅ Loaded ${allPayments.length} payments from Google Sheets (${verifiedCount} verified, ${pendingCount} pending)`);
                 
                 // Clean up expired payments immediately after loading
+                // This ensures expired payments are removed as soon as they're loaded
                 setTimeout(async () => {
+                    console.log('🧹 Running automatic cleanup after loading payments...');
                     await this.cleanupExpiredPayments();
-                }, 2000); // Wait 2 seconds after loading to clean up
+                }, 1000); // Wait 1 second after loading to clean up
                 
             } catch (error) {
                 console.error('Failed to load payments from storage:', error);
@@ -366,11 +368,17 @@ class SolanaPaymentOracle {
             return;
         }
         
-        console.log('🧹 Starting payment cleanup interval...');
+        console.log('🧹 Starting automatic payment cleanup (runs every 30 seconds)...');
         
+        // Run cleanup immediately
+        setTimeout(async () => {
+            await this.cleanupExpiredPayments();
+        }, 3000); // Wait 3 seconds after initialization
+        
+        // Then run cleanup every 30 seconds automatically
         this.cleanupInterval = setInterval(async () => {
             await this.cleanupExpiredPayments();
-        }, 60000); // Check every minute
+        }, 30000); // Check every 30 seconds
     }
     
     // Cleanup expired pending payments (older than 1 hour)
