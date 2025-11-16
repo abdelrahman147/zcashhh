@@ -747,14 +747,16 @@ class SolanaPaymentOracle {
         }
         
         try {
-            // Get recent transactions for merchant address
-            // Check more transactions (100) to catch payments sent before monitoring started
+            // Get recent transactions for merchant address using Alchemy RPC
             const publicKey = new window.SolanaWeb3.PublicKey(this.merchantAddress);
+            console.log(`🔍 Using Alchemy RPC to check transactions for address: ${this.merchantAddress}`);
+            console.log(`🔍 RPC URL: ${this.solanaConnection._rpcEndpoint || 'N/A'}`);
+            
             const signatures = await this.solanaConnection.getSignaturesForAddress(publicKey, {
                 limit: 20 // Reduced to avoid rate limits
             });
             
-            console.log(`🔍 Checking ${pendingPayments.length} pending payment(s) against ${signatures.length} recent transaction(s)...`);
+            console.log(`🔍 Checking ${pendingPayments.length} pending payment(s) against ${signatures.length} recent transaction(s) from Alchemy RPC...`);
             
             // Check each pending payment
             for (const payment of pendingPayments) {
@@ -838,6 +840,7 @@ class SolanaPaymentOracle {
                             Math.abs(amount - payment.solAmount) < 0.00000001) {
                             
                             // Found matching transaction!
+                            console.log(`✅ MATCH FOUND! Payment ${payment.id} matches transaction ${sigInfo.signature}`);
                             payment.status = 'verified';
                             payment.transactionSignature = sigInfo.signature;
                             payment.confirmedAt = Date.now();
@@ -850,10 +853,12 @@ class SolanaPaymentOracle {
                             payment.proof = verification.proof;
                             
                             this.payments.set(payment.id, payment);
+                            
+                            console.log(`💾 Saving verified payment ${payment.id} with signature ${sigInfo.signature} to Google Sheets...`);
                             await this.savePaymentToBackend(payment);
                             await this.triggerWebhook(payment);
                             
-                            console.log(`✅ Payment ${payment.id} automatically verified via transaction ${sigInfo.signature}`);
+                            console.log(`✅ Payment ${payment.id} automatically verified via Alchemy RPC transaction ${sigInfo.signature}`);
                             
                             // Trigger UI update immediately
                             this.triggerUIUpdate();

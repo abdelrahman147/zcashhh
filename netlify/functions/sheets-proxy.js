@@ -429,6 +429,10 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
             
             if (existingRowIndex) {
                 // UPDATE existing row
+                console.log(`[Payment Storage] Updating row ${existingRowIndex} for payment ${payment.id}`);
+                console.log(`[Payment Storage] Payment data: status=${payment.status}, signature=${payment.transactionSignature || 'N/A'}, confirmedAt=${payment.confirmedAt || 'N/A'}`);
+                console.log(`[Payment Storage] Values to update:`, values);
+                
                 const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${actualSheetId}/values/${sheetName}!A${existingRowIndex}:L${existingRowIndex}?valueInputOption=RAW`;
                 const updateResponse = await fetch(updateUrl, {
                     method: 'PUT',
@@ -438,16 +442,19 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                     },
                     body: JSON.stringify({ values: [values] })
                 });
-
+        
                 if (!updateResponse.ok) {
                     const errorText = await updateResponse.text();
                     console.error(`[Payment Storage] ❌ Failed to update payment in Google Sheets:`, errorText);
+                    console.error(`[Payment Storage] Update URL: ${updateUrl}`);
+                    console.error(`[Payment Storage] Response status: ${updateResponse.status}`);
                     throw new Error(`Failed to update payment: ${errorText}`);
                 }
-
+        
                 const updateResult = await updateResponse.json();
                 console.log(`[Payment Storage] ✅ Payment ${payment.id} successfully updated in Google Sheets (row ${existingRowIndex})`);
                 console.log(`[Payment Storage] Status: ${payment.status}, Transaction: ${payment.transactionSignature || 'N/A'}`);
+                console.log(`[Payment Storage] Updated range: ${updateResult.updatedRange || 'N/A'}`);
             } else {
                 // APPEND new row (payment doesn't exist yet)
                 const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${actualSheetId}/values/${sheetName}!A:L:append?valueInputOption=RAW`;
