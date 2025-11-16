@@ -14,13 +14,52 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <!-- Buffer polyfill for Solana SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
+    <!-- Buffer polyfill for Solana SDK - must load before Solana SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.js"></script>
     <script>
-        // Make Buffer available globally
-        if (typeof window !== 'undefined' && typeof window.Buffer === 'undefined' && typeof Buffer !== 'undefined') {
-            window.Buffer = Buffer;
-        }
+        // Make Buffer available globally with proper polyfill
+        (function() {
+            if (typeof window !== 'undefined') {
+                // Use the Buffer from the CDN
+                if (typeof Buffer !== 'undefined') {
+                    window.Buffer = Buffer;
+                    // Ensure Buffer.from exists
+                    if (!window.Buffer.from) {
+                        window.Buffer.from = function(data, encoding) {
+                            if (typeof data === 'string') {
+                                return new Buffer(data, encoding);
+                            }
+                            return new Buffer(data);
+                        };
+                    }
+                } else {
+                    // Fallback: create minimal Buffer polyfill
+                    window.Buffer = {
+                        from: function(data, encoding) {
+                            if (typeof data === 'string') {
+                                const bytes = new Uint8Array(data.length);
+                                for (let i = 0; i < data.length; i++) {
+                                    bytes[i] = data.charCodeAt(i);
+                                }
+                                return bytes;
+                            }
+                            return new Uint8Array(data);
+                        },
+                        isBuffer: function(obj) {
+                            return obj instanceof Uint8Array;
+                        }
+                    };
+                }
+                
+                // Polyfill for require (minimal, just to prevent errors)
+                if (typeof require === 'undefined') {
+                    window.require = function(module) {
+                        console.warn('require() called for:', module, '- not available in browser');
+                        return {};
+                    };
+                }
+            }
+        })();
     </script>
     <script>
         // Suppress browser extension errors (MetaMask, etc.) - must be before any scripts
