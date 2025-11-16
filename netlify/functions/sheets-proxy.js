@@ -647,6 +647,106 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
 }
 
 /**
+ * Delete payments by Order ID
+ */
+async function deletePaymentsByOrderId(event, accessToken, sheetId, sheetName, orderId) {
+    const headers = {
+        'Access-Control-Allow-Origin': '*'
+    };
+    
+    try {
+        if (!sheetId) {
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'No sheet to delete from', deletedCount: 0 }) };
+        }
+        
+        // Read all payment data to find by Order ID (Order ID is in column F, index 5)
+        const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A2:F`;
+        const readResponse = await fetch(readUrl, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+        
+        if (!readResponse.ok) {
+            throw new Error(`Failed to read sheet: ${readResponse.statusText}`);
+        }
+        
+        const readData = await readResponse.json();
+        const rows = readData.values || [];
+        
+        // Find ALL row indices that match this Order ID (Order ID is in column F, index 5)
+        const rowIndices = [];
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i] && rows[i][5] === orderId) {
+                rowIndices.push(i + 2); // +2 because: +1 for 0-based to 1-based, +1 for header row
+            }
+        }
+        
+        if (rowIndices.length === 0) {
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'No payments found with this Order ID', deletedCount: 0 }) };
+        }
+        
+        // Get the actual sheet (tab) ID
+        const spreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+        const spreadsheetResponse = await fetch(spreadsheetUrl, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+        
+        if (!spreadsheetResponse.ok) {
+            throw new Error(`Failed to get spreadsheet info: ${spreadsheetResponse.statusText}`);
+        }
+        
+        const spreadsheetData = await spreadsheetResponse.json();
+        const paymentSheet = spreadsheetData.sheets.find(s => 
+            s.properties.title.toLowerCase() === sheetName.toLowerCase()
+        );
+        
+        if (!paymentSheet) {
+            throw new Error(`Payment sheet "${sheetName}" not found`);
+        }
+        
+        const actualSheetId = paymentSheet.properties.sheetId;
+        
+        // Delete ALL matching rows at once
+        const sortedIndices = [...rowIndices].sort((a, b) => b - a);
+        const deleteRequests = sortedIndices.map(rowIndex => ({
+            deleteDimension: {
+                range: {
+                    sheetId: actualSheetId,
+                    dimension: 'ROWS',
+                    startIndex: rowIndex - 1,
+                    endIndex: rowIndex
+                }
+            }
+        }));
+        
+        const deleteUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`;
+        const deleteResponse = await fetch(deleteUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                requests: deleteRequests
+            })
+        });
+        
+        if (!deleteResponse.ok) {
+            const errorText = await deleteResponse.text();
+            throw new Error(`Failed to delete payment rows: ${errorText}`);
+        }
+        
+        return { statusCode: 200, headers, body: JSON.stringify({ success: true, deletedRows: sortedIndices, deletedCount: sortedIndices.length }) };
+    } catch (error) {
+        console.error('Delete by Order ID error:', error);
+        return { statusCode: 500, headers, body: JSON.stringify({ success: false, error: error.message }) };
+    }
+}
+
+/**
  * Create a new Google Sheet for payments
  */
 async function createNewPaymentSheet(accessToken) {
