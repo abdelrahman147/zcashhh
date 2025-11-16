@@ -345,14 +345,25 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                 const readData = await readResponse.json();
                 const rows = readData.values || [];
                 
+                console.log(`[Payment Storage] Checking ${rows.length} rows for payment ID: ${payment.id}`);
+                
                 // Find row index (1-based, +1 for header row, so +2 total)
+                // Check all rows, keep the last match (in case of duplicates)
                 for (let i = 0; i < rows.length; i++) {
-                    if (rows[i] && rows[i][0] === payment.id) {
+                    if (rows[i] && rows[i][0] && rows[i][0].trim() === payment.id.trim()) {
                         existingRowIndex = i + 2; // +2 because: +1 for 0-based to 1-based, +1 for header row
-                        console.log(`[Payment Storage] Found existing payment ${payment.id} at row ${existingRowIndex}`);
-                        break;
+                        console.log(`[Payment Storage] Found existing payment ${payment.id} at row ${existingRowIndex} (index ${i})`);
+                        // Don't break - keep checking to find the last match (in case of duplicates)
                     }
                 }
+                
+                if (existingRowIndex) {
+                    console.log(`[Payment Storage] Will update row ${existingRowIndex} with status: ${payment.status}`);
+                } else {
+                    console.log(`[Payment Storage] Payment ${payment.id} not found in sheet, will append new row`);
+                }
+            } else {
+                console.warn(`[Payment Storage] Failed to read sheet to check for existing payment: ${readResponse.status}`);
             }
             
             if (existingRowIndex) {
