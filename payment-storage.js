@@ -162,8 +162,60 @@ class PaymentStorage {
     }
 }
 
-// Global helper function to delete duplicate payments
+// Global helper function to delete duplicate payments by Order ID
 if (typeof window !== 'undefined') {
+    window.deletePaymentsByOrderId = async function(orderId) {
+        let paymentStorage = null;
+        
+        // Try multiple ways to get paymentStorage
+        if (window.oracle && window.oracle.paymentStorage) {
+            paymentStorage = window.oracle.paymentStorage;
+        } else if (window.paymentStorage) {
+            paymentStorage = window.paymentStorage;
+        } else {
+            if (window.PaymentStorage) {
+                console.log('⚠️ Creating temporary PaymentStorage instance...');
+                paymentStorage = new window.PaymentStorage();
+            } else {
+                console.error('❌ PaymentStorage not available.');
+                return { deleted: 0, error: 'PaymentStorage not available' };
+            }
+        }
+        
+        console.log(`🗑️ Deleting all payments with Order ID: ${orderId}...`);
+        
+        try {
+            const response = await fetch(`${paymentStorage.apiBase}/payment/by-order/${encodeURIComponent(orderId)}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sheetId: paymentStorage.sheetId,
+                    sheetName: paymentStorage.paymentSheetName
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+            const deletedCount = result.deletedCount || 0;
+            
+            if (deletedCount > 0) {
+                console.log(`✅ Deleted ${deletedCount} payment(s) with Order ID ${orderId}`);
+            } else {
+                console.log(`ℹ️ No payments found with Order ID ${orderId}`);
+            }
+            
+            return { deleted: deletedCount, success: true };
+        } catch (error) {
+            console.error(`❌ Failed to delete payments by Order ID:`, error);
+            return { deleted: 0, success: false, error: error.message };
+        }
+    };
+    
     window.deleteDuplicatePayments = async function(paymentId) {
         let paymentStorage = null;
         

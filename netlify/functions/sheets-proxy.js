@@ -539,7 +539,16 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
         } else if (event.httpMethod === 'DELETE') {
             // Delete payment (for expired pending payments)
             const pathParts = event.path.split('/');
-            const paymentId = pathParts[pathParts.length - 1];
+            const lastPart = pathParts[pathParts.length - 1];
+            
+            // Check if deleting by Order ID
+            if (event.path.includes('/by-order/')) {
+                const orderId = decodeURIComponent(lastPart);
+                return await deletePaymentsByOrderId(event, accessToken, sheetId, sheetName, orderId);
+            }
+            
+            // Otherwise delete by Payment ID
+            const paymentId = lastPart;
             
             if (!sheetId) {
                 return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'No sheet to delete from' }) };
