@@ -752,13 +752,26 @@
                             
                             if (!verifyResponse.ok) {
                                 console.warn('Backend verification failed:', await verifyResponse.text());
+                            } else {
+                                console.log('✅ Payment sent and backend notified');
+                                // Update payment status locally
+                                payment.status = 'verified';
+                                payment.transactionSignature = signature;
+                                payment.confirmedAt = Date.now();
+                                
+                                // Refresh the page display
+                                displayPaymentPage(link, payment);
                             }
                         } catch (err) {
                             console.warn('Failed to notify backend:', err);
                         }
                         
-                        alert(`Payment sent successfully! Transaction: ${signature}`);
-                        window.location.href = '/';
+                        // Don't show alert or redirect - just update the page
+                        payBtn.textContent = 'Payment Sent';
+                        payBtn.disabled = true;
+                        
+                        // Start polling for verification status
+                        startPaymentStatusPolling(payment.id);
                     } catch (error) {
                         console.error('Payment error:', error);
                         let errorMessage = 'Payment failed: ';
@@ -795,9 +808,88 @@
             }
         }
         
+        // Poll payment status to automatically update when verified
+        let statusPollInterval = null;
+        
+        function startPaymentStatusPolling(paymentId) {
+            // Stop any existing polling
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+            }
+            
+            console.log('🔄 Starting payment status polling for:', paymentId);
+            
+            // Poll every 5 seconds to check if payment is verified
+            statusPollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/oracle/payments/${paymentId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.payment && data.payment.status === 'verified') {
+                            console.log('✅ Payment verified! Updating page...');
+                            clearInterval(statusPollInterval);
+                            statusPollInterval = null;
+                            
+                            // Reload payment link to show verified status
+                            loadPaymentLink();
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Error polling payment status:', error);
+                }
+            }, 5000); // Check every 5 seconds
+            
+            // Stop polling after 5 minutes
+            setTimeout(() => {
+                if (statusPollInterval) {
+                    clearInterval(statusPollInterval);
+                    statusPollInterval = null;
+                    console.log('⏹️ Stopped payment status polling (timeout)');
+                }
+            }, 5 * 60 * 1000); // 5 minutes
+        }
+        
+        // Also poll on page load if payment is pending
+        function checkAndStartPolling() {
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            let linkId = pathParts[pathParts.length - 1];
+            
+            if (pathParts.length >= 2 && pathParts[pathParts.length - 2] === 'pay') {
+                linkId = pathParts[pathParts.length - 1];
+            }
+            
+            if (linkId && linkId.startsWith('link_')) {
+                // Try to extract payment ID
+                setTimeout(async () => {
+                    try {
+                        // Try to get payment from link
+                        const linkResponse = await fetch(`/api/payment-links/${linkId}`);
+                        if (linkResponse.ok) {
+                            const linkData = await linkResponse.json();
+                            if (linkData.link && linkData.link.paymentId) {
+                                const paymentResponse = await fetch(`/api/oracle/payments/${linkData.link.paymentId}`);
+                                if (paymentResponse.ok) {
+                                    const paymentData = await paymentResponse.json();
+                                    if (paymentData.payment && paymentData.payment.status === 'pending') {
+                                        console.log('🔄 Payment is pending, starting status polling...');
+                                        startPaymentStatusPolling(paymentData.payment.id);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Could not start polling:', error);
+                    }
+                }, 2000); // Wait 2 seconds after page load
+            }
+        }
+        
         // Start loading payment link immediately (don't wait for SolanaWeb3 for display)
         // SolanaWeb3 is only needed for "Pay with Wallet" button
         loadPaymentLink();
+        
+        // Check if we need to start polling for pending payments
+        checkAndStartPolling();
         
         // Also wait for SolanaWeb3 in background for button functionality
         setTimeout(() => waitForSolanaWeb3(), 500);
