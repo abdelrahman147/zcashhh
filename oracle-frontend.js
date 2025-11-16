@@ -429,6 +429,79 @@
         }
         
         paymentsContainer.innerHTML = html;
+        
+        // Add event listeners to "Verify Now" buttons
+        document.querySelectorAll('.verify-payment-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const paymentId = e.target.getAttribute('data-payment-id');
+                if (!paymentId || !oracle) {
+                    alert('Cannot verify payment');
+                    return;
+                }
+                
+                const btn = e.target;
+                btn.disabled = true;
+                btn.textContent = 'Verifying...';
+                
+                try {
+                    console.log(`🔍 Manually verifying payment: ${paymentId}`);
+                    
+                    // Force check this specific payment
+                    await oracle.checkPendingPayments();
+                    
+                    // Also try to verify if we have transaction signature
+                    const payment = oracle.payments.get(paymentId);
+                    if (payment && payment.transactionSignature) {
+                        console.log(`🔍 Payment has transaction signature, verifying...`);
+                        const verification = await oracle.verifySolanaTransaction(
+                            payment.transactionSignature,
+                            payment.solAmount
+                        );
+                        
+                        if (verification.verified && payment.status !== 'verified') {
+                            payment.status = 'verified';
+                            payment.proof = verification.proof;
+                            payment.confirmedAt = Date.now();
+                            oracle.payments.set(payment.id, payment);
+                            await oracle.savePaymentToBackend(payment);
+                            await oracle.triggerWebhook(payment);
+                            oracle.triggerUIUpdate();
+                            console.log(`✅ Payment ${payment.id} manually verified!`);
+                        }
+                    }
+                    
+                    // Reload payments to show updated status
+                    if (oracle.loadPaymentsFromStorage) {
+                        await oracle.loadPaymentsFromStorage();
+                    }
+                    
+                    // Refresh display
+                    const allPayments = oracle.getAllPayments();
+                    const filterValue = paymentFilter ? paymentFilter.value : 'all';
+                    let filteredPayments = allPayments;
+                    
+                    if (filterValue === 'verified') {
+                        filteredPayments = allPayments.filter(p => p.status === 'verified');
+                    } else if (filterValue === 'pending') {
+                        filteredPayments = allPayments.filter(p => p.status === 'pending');
+                    } else if (filterValue === 'confirmed') {
+                        filteredPayments = allPayments.filter(p => p.status === 'verified' && p.confirmedAt);
+                    }
+                    
+                    displayPayments(filteredPayments);
+                    
+                    btn.textContent = 'Verify Now';
+                    setTimeout(() => {
+                        btn.disabled = false;
+                    }, 2000);
+                } catch (error) {
+                    console.error('Error verifying payment:', error);
+                    alert('Error verifying payment: ' + error.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Verify Now';
+                }
+            });
+        });
     }
     
     function renderPaymentCard(payment) {
