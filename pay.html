@@ -47,7 +47,13 @@
             let currentIndex = 0;
             
             function tryLoadSolana() {
-                if (typeof window.SolanaWeb3 !== 'undefined') {
+                // Check multiple possible global variable names
+                if (typeof window.SolanaWeb3 !== 'undefined' || 
+                    typeof window.solanaWeb3 !== 'undefined') {
+                    // Normalize to window.SolanaWeb3
+                    if (window.solanaWeb3 && !window.SolanaWeb3) {
+                        window.SolanaWeb3 = window.solanaWeb3;
+                    }
                     console.log('✅ SolanaWeb3 already loaded');
                     return;
                 }
@@ -59,16 +65,37 @@
                 
                 const script = document.createElement('script');
                 script.src = cdnUrls[currentIndex];
-                script.async = true;
+                script.async = false; // Load synchronously
+                script.crossOrigin = 'anonymous';
                 
                 script.onload = function() {
-                    if (typeof window.SolanaWeb3 !== 'undefined') {
-                        console.log(`✅ SolanaWeb3 loaded from CDN ${currentIndex + 1}`);
-                    } else {
-                        console.warn(`⚠️ Script loaded but SolanaWeb3 not defined, trying next CDN...`);
-                        currentIndex++;
-                        tryLoadSolana();
-                    }
+                    // Wait a bit for the script to initialize
+                    setTimeout(function() {
+                        // Check multiple possible global variable names
+                        if (typeof window.SolanaWeb3 !== 'undefined') {
+                            console.log(`✅ SolanaWeb3 loaded from CDN ${currentIndex + 1}`);
+                        } else if (typeof window.solanaWeb3 !== 'undefined') {
+                            window.SolanaWeb3 = window.solanaWeb3;
+                            console.log(`✅ SolanaWeb3 loaded from CDN ${currentIndex + 1} (as solanaWeb3)`);
+                        } else {
+                            // Check if it's available in a different format
+                            const possibleNames = ['SolanaWeb3', 'solanaWeb3', 'web3', 'solana'];
+                            let found = false;
+                            for (const name of possibleNames) {
+                                if (typeof window[name] !== 'undefined' && window[name].Connection) {
+                                    window.SolanaWeb3 = window[name];
+                                    console.log(`✅ SolanaWeb3 loaded from CDN ${currentIndex + 1} (as ${name})`);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                console.warn(`⚠️ Script loaded but SolanaWeb3 not found, trying next CDN...`);
+                                currentIndex++;
+                                tryLoadSolana();
+                            }
+                        }
+                    }, 200);
                 };
                 
                 script.onerror = function() {
