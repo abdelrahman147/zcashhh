@@ -36,6 +36,29 @@
     }
     
     function setupOracleEventListeners() {
+        // Payment filter dropdown
+        const paymentFilter = document.getElementById('payment-filter');
+        if (paymentFilter) {
+            paymentFilter.addEventListener('change', (e) => {
+                const filterValue = e.target.value;
+                if (oracle) {
+                    const allPayments = oracle.getAllPayments();
+                    let filteredPayments = allPayments;
+                    
+                    if (filterValue === 'verified') {
+                        filteredPayments = allPayments.filter(p => p.status === 'verified');
+                    } else if (filterValue === 'pending') {
+                        filteredPayments = allPayments.filter(p => p.status === 'pending');
+                    } else if (filterValue === 'confirmed') {
+                        filteredPayments = allPayments.filter(p => p.status === 'verified' && p.confirmedAt);
+                    }
+                    // 'all' shows all payments
+                    
+                    displayPayments(filteredPayments);
+                }
+            });
+        }
+        
         // Payment verification
         const verifyBtn = document.getElementById('verify-payment-btn');
         if (verifyBtn) {
@@ -310,43 +333,53 @@
                               payment.status === 'pending' ? 'warning' : 'error';
             const statusText = payment.status.toUpperCase();
             
-            return `
-                <div class="payment-card" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                        <div>
-                            <h3 style="margin: 0 0 0.5rem 0;">Payment ${payment.id}</h3>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">
-                                ${date.toLocaleString()}
-                            </p>
-                        </div>
-                        <span class="status-badge status-${statusClass}" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
-                            ${statusText}
+        return `
+            <div class="payment-card" style="background: var(--bg-secondary); border: 1px solid ${payment.status === 'verified' ? 'var(--accent-success)' : 'var(--border-color)'}; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; ${payment.status === 'verified' ? 'border-left: 4px solid var(--accent-success);' : ''}">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <div>
+                        <h3 style="margin: 0 0 0.5rem 0;">Payment ${payment.id.substring(0, 20)}...</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">
+                            ${date.toLocaleString()}
+                        </p>
+                    </div>
+                    <span class="status-badge status-${statusClass}" style="padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; background: ${payment.status === 'verified' ? 'var(--accent-success)' : payment.status === 'pending' ? 'var(--accent-warning)' : 'var(--accent-error)'}; color: white;">
+                        ${payment.status === 'verified' ? '✓ VERIFIED' : statusText}
+                    </span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <span style="color: var(--text-secondary);">Amount:</span>
+                        <span style="display: block; font-weight: 600;">$${payment.amount.toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-secondary);">${payment.token || 'SOL'} Amount:</span>
+                        <span style="display: block; font-weight: 600; color: var(--accent-primary);">
+                            ${(payment.solAmount || payment.amount || 0).toFixed(8)} ${payment.token || 'SOL'}
                         </span>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div>
-                            <span style="color: var(--text-secondary);">Amount:</span>
-                            <span style="display: block; font-weight: 600;">$${payment.amount.toFixed(2)}</span>
-                        </div>
-                        <div>
-                            <span style="color: var(--text-secondary);">${payment.token || 'SOL'} Amount:</span>
-                            <span style="display: block; font-weight: 600; color: var(--accent-primary);">
-                                ${(payment.solAmount || payment.amount || 0).toFixed(8)} ${payment.token || 'SOL'}
-                            </span>
-                        </div>
-                    </div>
-                    ${payment.transactionSignature ? `
-                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                            <span style="color: var(--text-secondary); font-size: 0.85rem;">Transaction:</span>
-                            <a href="https://solscan.io/tx/${payment.transactionSignature}" target="_blank" 
-                               style="color: var(--accent-primary); font-size: 0.85rem; word-break: break-all;">
-                                ${payment.transactionSignature.substring(0, 20)}...
-                            </a>
-                        </div>
-                    ` : ''}
                 </div>
-            `;
-        }).join('');
+                ${payment.orderId ? `
+                    <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">Order ID: </span>
+                        <span style="font-family: var(--font-mono); font-size: 0.85rem;">${payment.orderId}</span>
+                    </div>
+                ` : ''}
+                ${payment.transactionSignature ? `
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">Transaction:</span>
+                        <a href="https://solscan.io/tx/${payment.transactionSignature}" target="_blank" 
+                           style="color: var(--accent-primary); font-size: 0.85rem; word-break: break-all; display: block; margin-top: 0.25rem;">
+                            ${payment.transactionSignature.substring(0, 20)}...
+                        </a>
+                    </div>
+                ` : ''}
+                ${payment.confirmedAt ? `
+                    <div style="margin-top: 0.5rem; padding-top: 0.5rem;">
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">Confirmed: ${new Date(payment.confirmedAt).toLocaleString()}</span>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
     
     function showCreatePaymentModal() {
