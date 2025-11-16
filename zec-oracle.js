@@ -767,21 +767,42 @@ class SolanaPaymentOracle {
                             payment.solAmount
                         );
                         
-                        if (verification.verified && payment.status !== 'verified') {
-                            payment.status = 'verified';
-                            payment.proof = verification.proof;
-                            payment.confirmedAt = Date.now();
-                            this.payments.set(payment.id, payment);
-                            await this.savePaymentToBackend(payment);
-                            await this.triggerWebhook(payment);
-                            console.log(`✅ Payment ${payment.id} automatically verified!`);
-                            
-                            // Trigger UI update immediately
-                            this.triggerUIUpdate();
+                        // If proof is verified, update status regardless of current status
+                        if (verification.verified) {
+                            if (payment.status !== 'verified') {
+                                console.log(`🔄 Updating payment ${payment.id} from ${payment.status} to verified (proof verified)`);
+                                payment.status = 'verified';
+                                payment.proof = verification.proof;
+                                payment.confirmedAt = Date.now();
+                                this.payments.set(payment.id, payment);
+                                await this.savePaymentToBackend(payment);
+                                await this.triggerWebhook(payment);
+                                console.log(`✅ Payment ${payment.id} automatically verified!`);
+                                
+                                // Trigger UI update immediately
+                                this.triggerUIUpdate();
+                            } else {
+                                // Status already verified, but ensure proof is updated
+                                payment.proof = verification.proof;
+                                this.payments.set(payment.id, payment);
+                            }
+                        } else {
+                            console.warn(`⚠️ Payment ${payment.id} has transaction signature but verification failed`);
                         }
                     } catch (error) {
                         console.warn(`Failed to verify transaction for payment ${payment.id}:`, error);
                     }
+                    continue;
+                }
+                
+                // Also check if payment has a verified proof but status is still pending
+                if (payment.proof && payment.proof.verified && payment.status !== 'verified') {
+                    console.log(`🔄 Payment ${payment.id} has verified proof but status is ${payment.status}, updating to verified`);
+                    payment.status = 'verified';
+                    payment.confirmedAt = payment.confirmedAt || Date.now();
+                    this.payments.set(payment.id, payment);
+                    await this.savePaymentToBackend(payment);
+                    this.triggerUIUpdate();
                     continue;
                 }
                 
