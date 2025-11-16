@@ -159,15 +159,25 @@ if (typeof window !== 'undefined') {
     window.deleteDuplicatePayments = async function(paymentId) {
         let paymentStorage = null;
         
-        // Try to get paymentStorage from oracle first
+        // Try multiple ways to get paymentStorage
         if (window.oracle && window.oracle.paymentStorage) {
             paymentStorage = window.oracle.paymentStorage;
         } else if (window.paymentStorage) {
             paymentStorage = window.paymentStorage;
         } else {
-            console.error('❌ PaymentStorage not initialized. Make sure the page is fully loaded.');
-            console.error('   Try: window.oracle.paymentStorage or window.paymentStorage');
-            return;
+            // Try to create a new PaymentStorage instance as fallback
+            if (window.PaymentStorage) {
+                console.log('⚠️ Creating temporary PaymentStorage instance...');
+                paymentStorage = new window.PaymentStorage();
+            } else {
+                console.error('❌ PaymentStorage not available. Make sure the page is fully loaded.');
+                console.error('   Available objects:', {
+                    hasOracle: !!window.oracle,
+                    hasPaymentStorage: !!window.paymentStorage,
+                    hasPaymentStorageClass: !!window.PaymentStorage
+                });
+                return { deleted: 0, attempts: 0, error: 'PaymentStorage not available' };
+            }
         }
         
         console.log(`🗑️ Deleting all instances of payment ${paymentId}...`);
@@ -188,6 +198,7 @@ if (typeof window !== 'undefined') {
                 await new Promise(resolve => setTimeout(resolve, 500));
             } else {
                 // No more instances found
+                console.log(`ℹ️ No more instances found after ${deleted} deletion(s)`);
                 break;
             }
         }

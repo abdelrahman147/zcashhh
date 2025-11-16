@@ -17,6 +17,9 @@
             confirmationThreshold: parseInt(localStorage.getItem('sol_confirmation_threshold')) || 1
         });
         
+        // Expose oracle to window for global access
+        window.oracle = oracle;
+        
         // Initialize Solana Pay integration
         if (window.SolanaPayIntegration) {
             window.solanaPay = new SolanaPayIntegration(oracle);
