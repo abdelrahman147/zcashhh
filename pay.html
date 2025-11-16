@@ -428,10 +428,13 @@
                         }
                         
                         // Create transaction with fresh blockhash
-                        // Note: In newer Solana Web3.js, use recentBlockhash in constructor
-                        const transaction = new window.SolanaWeb3.Transaction();
-                        transaction.feePayer = publicKey;
-                        transaction.recentBlockhash = blockhash;
+                        // Use the constructor with all required fields
+                        const transaction = new window.SolanaWeb3.Transaction({
+                            feePayer: publicKey,
+                            recentBlockhash: blockhash
+                        });
+                        
+                        // Add transfer instruction
                         transaction.add(
                             window.SolanaWeb3.SystemProgram.transfer({
                                 fromPubkey: publicKey,
@@ -439,6 +442,16 @@
                                 lamports: lamports
                             })
                         );
+                        
+                        // Verify blockhash is set (double-check)
+                        if (!transaction.recentBlockhash) {
+                            transaction.recentBlockhash = blockhash;
+                        }
+                        
+                        // Verify feePayer is set
+                        if (!transaction.feePayer) {
+                            transaction.feePayer = publicKey;
+                        }
                         
                         payBtn.textContent = 'Confirm in wallet...';
                         
