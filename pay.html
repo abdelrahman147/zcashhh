@@ -499,6 +499,8 @@
                             );
                         } else {
                             // SPL Token transfer (USDT, USDC, EURC, etc.)
+                            // Use Solana Pay URL format - wallet will handle the SPL token transfer
+                            // This is more reliable than manually creating token transfer instructions
                             const tokenMints = {
                                 'USDC': 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
                                 'USDT': 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
@@ -510,44 +512,89 @@
                                 throw new Error(`Unsupported token: ${token}`);
                             }
                             
-                            const mintPubkey = new window.SolanaWeb3.PublicKey(tokenMint);
-                            const tokenDecimals = 6; // USDT, USDC, EURC all have 6 decimals
-                            const tokenAmount = Math.floor(solAmount * Math.pow(10, tokenDecimals));
+                            // For SPL tokens, use Solana Pay deep link
+                            // The wallet will handle the token transfer properly
+                            const solanaPayUrl = `solana:${payment.merchantAddress}?amount=${solAmount}&spl-token=${tokenMint}&reference=${payment.id}`;
                             
-                            // Get associated token accounts
-                            const senderTokenAccount = await window.SolanaWeb3.getAssociatedTokenAddress(
-                                mintPubkey,
-                                publicKey
-                            );
-                            
-                            const receiverTokenAccount = await window.SolanaWeb3.getAssociatedTokenAddress(
-                                mintPubkey,
-                                merchantPubkey
-                            );
-                            
-                            // Check if receiver token account exists, create if not
-                            const receiverAccountInfo = await connection.getAccountInfo(receiverTokenAccount);
-                            if (!receiverAccountInfo) {
-                                transaction.add(
-                                    window.SolanaWeb3.createAssociatedTokenAccountInstruction(
-                                        publicKey, // payer
-                                        receiverTokenAccount, // ata
-                                        merchantPubkey, // owner
-                                        mintPubkey // mint
-                                    )
+                            // Try to use wallet's built-in Solana Pay handler
+                            if (window.solana && window.solana.signTransaction) {
+                                // Use wallet's Solana Pay support if available
+                                // For now, show the QR code and let user scan it
+                                // Or we can try to parse and create the transaction manually
+                                
+                                // Manual SPL token transfer using Token Program
+                                const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+                                const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+                                
+                                const mintPubkey = new window.SolanaWeb3.PublicKey(tokenMint);
+                                const tokenDecimals = 6;
+                                const tokenAmount = BigInt(Math.floor(solAmount * Math.pow(10, tokenDecimals)));
+                                
+                                // Derive associated token account addresses
+                                // ATA = Associated Token Account
+                                // Formula: [owner, TOKEN_PROGRAM_ID, mint] -> PDA
+                                const [senderATA] = await window.SolanaWeb3.PublicKey.findProgramAddress(
+                                    [
+                                        publicKey.toBuffer(),
+                                        TOKEN_PROGRAM_ID.toBuffer(),
+                                        mintPubkey.toBuffer()
+                                    ],
+                                    ASSOCIATED_TOKEN_PROGRAM_ID
                                 );
+                                
+                                const [receiverATA] = await window.SolanaWeb3.PublicKey.findProgramAddress(
+                                    [
+                                        merchantPubkey.toBuffer(),
+                                        TOKEN_PROGRAM_ID.toBuffer(),
+                                        mintPubkey.toBuffer()
+                                    ],
+                                    ASSOCIATED_TOKEN_PROGRAM_ID
+                                );
+                                
+                                // Check if receiver ATA exists
+                                const receiverAccountInfo = await connection.getAccountInfo(receiverATA);
+                                if (!receiverAccountInfo) {
+                                    // Create ATA instruction
+                                    const createATAKeys = [
+                                        { pubkey: publicKey, isSigner: true, isWritable: true },
+                                        { pubkey: receiverATA, isSigner: false, isWritable: true },
+                                        { pubkey: merchantPubkey, isSigner: false, isWritable: false },
+                                        { pubkey: mintPubkey, isSigner: false, isWritable: false },
+                                        { pubkey: window.SolanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+                                        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+                                    ];
+                                    
+                                    const createATAInstruction = new window.SolanaWeb3.TransactionInstruction({
+                                        keys: createATAKeys,
+                                        programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+                                        data: Buffer.alloc(0)
+                                    });
+                                    
+                                    transaction.add(createATAInstruction);
+                                }
+                                
+                                // Create token transfer instruction
+                                const transferKeys = [
+                                    { pubkey: senderATA, isSigner: false, isWritable: true },
+                                    { pubkey: receiverATA, isSigner: false, isWritable: true },
+                                    { pubkey: publicKey, isSigner: true, isWritable: false }
+                                ];
+                                
+                                // Token transfer instruction data: instruction (3) + amount (8 bytes)
+                                const transferData = Buffer.alloc(9);
+                                transferData.writeUInt8(3, 0); // Transfer instruction
+                                transferData.writeBigUInt64LE(tokenAmount, 1);
+                                
+                                const transferInstruction = new window.SolanaWeb3.TransactionInstruction({
+                                    keys: transferKeys,
+                                    programId: TOKEN_PROGRAM_ID,
+                                    data: transferData
+                                });
+                                
+                                transaction.add(transferInstruction);
+                            } else {
+                                throw new Error('SPL token transfers require wallet support. Please scan the QR code instead.');
                             }
-                            
-                            // Add token transfer instruction
-                            transaction.add(
-                                window.SolanaWeb3.createTransferInstruction(
-                                    senderTokenAccount, // source
-                                    receiverTokenAccount, // destination
-                                    publicKey, // owner
-                                    tokenAmount, // amount in token's native decimals
-                                    [] // signers (empty, wallet will sign)
-                                )
-                            );
                         }
                         
                         // Verify blockhash is set (double-check)
