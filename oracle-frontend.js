@@ -477,6 +477,7 @@
                     
                     // Refresh display
                     const allPayments = oracle.getAllPayments();
+                    const paymentFilter = document.getElementById('payment-filter');
                     const filterValue = paymentFilter ? paymentFilter.value : 'all';
                     let filteredPayments = allPayments;
                     
