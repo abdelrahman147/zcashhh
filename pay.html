@@ -16,95 +16,82 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <!-- Buffer polyfill for Solana SDK - must load before Solana SDK -->
     <script>
-        // Comprehensive Buffer polyfill for browser
+        // Buffer polyfill that extends Uint8Array directly (required by Solana SDK)
         (function() {
             if (typeof window !== 'undefined' && typeof window.Buffer === 'undefined') {
-                // Create a proper Buffer implementation
-                function BufferPolyfill(arg, encoding) {
-                    if (!(this instanceof BufferPolyfill)) {
-                        return new BufferPolyfill(arg, encoding);
-                    }
-                    
-                    if (typeof arg === 'number') {
-                        this.data = new Uint8Array(arg);
-                    } else if (typeof arg === 'string') {
-                        const bytes = new Uint8Array(arg.length);
-                        for (let i = 0; i < arg.length; i++) {
-                            bytes[i] = arg.charCodeAt(i);
-                        }
-                        this.data = bytes;
-                    } else if (arg instanceof ArrayBuffer || arg instanceof Uint8Array) {
-                        this.data = new Uint8Array(arg);
-                    } else if (Array.isArray(arg)) {
-                        this.data = new Uint8Array(arg);
-                    } else {
-                        this.data = new Uint8Array(0);
-                    }
-                    
-                    this.length = this.data.length;
-                }
-                
-                BufferPolyfill.from = function(arg, encoding) {
-                    if (typeof arg === 'string') {
-                        if (encoding === 'hex') {
-                            const bytes = new Uint8Array(arg.length / 2);
-                            for (let i = 0; i < arg.length; i += 2) {
-                                bytes[i / 2] = parseInt(arg.substr(i, 2), 16);
+                // Create Buffer class that extends Uint8Array
+                class BufferPolyfill extends Uint8Array {
+                    constructor(arg, encoding) {
+                        if (typeof arg === 'number') {
+                            super(arg);
+                        } else if (typeof arg === 'string') {
+                            if (encoding === 'hex') {
+                                const bytes = new Uint8Array(arg.length / 2);
+                                for (let i = 0; i < arg.length; i += 2) {
+                                    bytes[i / 2] = parseInt(arg.substr(i, 2), 16);
+                                }
+                                super(bytes.length);
+                                this.set(bytes);
+                            } else {
+                                const bytes = new Uint8Array(arg.length);
+                                for (let i = 0; i < arg.length; i++) {
+                                    bytes[i] = arg.charCodeAt(i);
+                                }
+                                super(bytes.length);
+                                this.set(bytes);
                             }
-                            const buf = new BufferPolyfill();
-                            buf.data = bytes;
-                            buf.length = bytes.length;
-                            return buf;
+                        } else if (arg instanceof ArrayBuffer || arg instanceof Uint8Array) {
+                            super(arg);
+                        } else if (Array.isArray(arg)) {
+                            super(arg);
+                        } else {
+                            super(0);
                         }
-                        const bytes = new Uint8Array(arg.length);
-                        for (let i = 0; i < arg.length; i++) {
-                            bytes[i] = arg.charCodeAt(i);
+                    }
+                    
+                    static from(arg, encoding) {
+                        if (typeof arg === 'string') {
+                            if (encoding === 'hex') {
+                                const bytes = new Uint8Array(arg.length / 2);
+                                for (let i = 0; i < arg.length; i += 2) {
+                                    bytes[i / 2] = parseInt(arg.substr(i, 2), 16);
+                                }
+                                return new BufferPolyfill(bytes);
+                            }
+                            const bytes = new Uint8Array(arg.length);
+                            for (let i = 0; i < arg.length; i++) {
+                                bytes[i] = arg.charCodeAt(i);
+                            }
+                            return new BufferPolyfill(bytes);
+                        } else if (arg instanceof Uint8Array || arg instanceof ArrayBuffer) {
+                            return new BufferPolyfill(arg);
+                        } else if (Array.isArray(arg)) {
+                            return new BufferPolyfill(arg);
                         }
-                        const buf = new BufferPolyfill();
-                        buf.data = bytes;
-                        buf.length = bytes.length;
-                        return buf;
-                    } else if (arg instanceof Uint8Array || arg instanceof ArrayBuffer) {
-                        const buf = new BufferPolyfill();
-                        buf.data = new Uint8Array(arg);
-                        buf.length = buf.data.length;
-                        return buf;
-                    } else if (Array.isArray(arg)) {
-                        const buf = new BufferPolyfill();
-                        buf.data = new Uint8Array(arg);
-                        buf.length = buf.data.length;
+                        return new BufferPolyfill(arg);
+                    }
+                    
+                    static isBuffer(obj) {
+                        return obj instanceof BufferPolyfill || obj instanceof Uint8Array;
+                    }
+                    
+                    static alloc(size, fill) {
+                        const buf = new BufferPolyfill(size);
+                        if (fill !== undefined) {
+                            buf.fill(fill);
+                        }
                         return buf;
                     }
-                    return new BufferPolyfill(arg);
-                };
-                
-                BufferPolyfill.isBuffer = function(obj) {
-                    return obj instanceof BufferPolyfill || obj instanceof Uint8Array;
-                };
-                
-                BufferPolyfill.alloc = function(size, fill) {
-                    const buf = new BufferPolyfill();
-                    buf.data = new Uint8Array(size);
-                    buf.length = size;
-                    if (fill !== undefined) {
-                        buf.data.fill(fill);
+                    
+                    toString(encoding) {
+                        if (encoding === 'hex') {
+                            return Array.from(this)
+                                .map(b => b.toString(16).padStart(2, '0'))
+                                .join('');
+                        }
+                        return String.fromCharCode.apply(null, this);
                     }
-                    return buf;
-                };
-                
-                // Make it work like Uint8Array
-                BufferPolyfill.prototype = Object.create(Uint8Array.prototype);
-                BufferPolyfill.prototype.constructor = BufferPolyfill;
-                
-                // Add common methods
-                BufferPolyfill.prototype.toString = function(encoding) {
-                    if (encoding === 'hex') {
-                        return Array.from(this.data)
-                            .map(b => b.toString(16).padStart(2, '0'))
-                            .join('');
-                    }
-                    return String.fromCharCode.apply(null, this.data);
-                };
+                }
                 
                 window.Buffer = BufferPolyfill;
                 if (typeof global !== 'undefined') {
