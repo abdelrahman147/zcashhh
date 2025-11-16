@@ -447,6 +447,103 @@ class SolanaPaymentOracle {
         if (totalCleaned > 0) {
             console.log(`✅ Total cleaned up: ${totalCleaned} expired pending payments`);
         }
+        
+        // Also check for and delete duplicate payments automatically
+        await this.cleanupDuplicatePayments();
+    }
+    
+    // Automatically detect and delete duplicate payments
+    async cleanupDuplicatePayments() {
+        if (!this.paymentStorage) {
+            return;
+        }
+        
+        try {
+            const allPayments = await this.paymentStorage.loadPayments();
+            
+            // Group payments by Order ID to find duplicates
+            const paymentsByOrderId = new Map();
+            allPayments.forEach(payment => {
+                if (payment.orderId) {
+                    if (!paymentsByOrderId.has(payment.orderId)) {
+                        paymentsByOrderId.set(payment.orderId, []);
+                    }
+                    paymentsByOrderId.get(payment.orderId).push(payment);
+                }
+            });
+            
+            // Find duplicates (same Order ID with multiple payments)
+            let duplicatesDeleted = 0;
+            for (const [orderId, payments] of paymentsByOrderId.entries()) {
+                if (payments.length > 1) {
+                    console.log(`🔍 Found ${payments.length} payments with Order ID: ${orderId}`);
+                    
+                    // Sort: verified first, then by creation date (newest first)
+                    payments.sort((a, b) => {
+                        if (a.status === 'verified' && b.status !== 'verified') return -1;
+                        if (a.status !== 'verified' && b.status === 'verified') return 1;
+                        const aTime = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : a.createdAt;
+                        const bTime = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : b.createdAt;
+                        return bTime - aTime; // Newest first
+                    });
+                    
+                    // Keep the first one (best one), delete the rest
+                    const toKeep = payments[0];
+                    const toDelete = payments.slice(1);
+                    
+                    console.log(`✅ Keeping payment ${toKeep.id} (status: ${toKeep.status}), deleting ${toDelete.length} duplicate(s)`);
+                    
+                    for (const duplicate of toDelete) {
+                        try {
+                            await this.paymentStorage.deleteExpiredPayment(duplicate.id);
+                            this.payments.delete(duplicate.id);
+                            duplicatesDeleted++;
+                            console.log(`🗑️ Deleted duplicate payment: ${duplicate.id}`);
+                        } catch (error) {
+                            console.warn(`Failed to delete duplicate payment ${duplicate.id}:`, error);
+                        }
+                    }
+                }
+            }
+            
+            // Also check for duplicate transaction signatures (if verified)
+            const paymentsByTxSig = new Map();
+            allPayments.forEach(payment => {
+                if (payment.transactionSignature && payment.status === 'verified') {
+                    if (!paymentsByTxSig.has(payment.transactionSignature)) {
+                        paymentsByTxSig.set(payment.transactionSignature, []);
+                    }
+                    paymentsByTxSig.get(payment.transactionSignature).push(payment);
+                }
+            });
+            
+            for (const [txSig, payments] of paymentsByTxSig.entries()) {
+                if (payments.length > 1) {
+                    console.log(`🔍 Found ${payments.length} payments with same transaction signature: ${txSig.substring(0, 20)}...`);
+                    
+                    // Keep the first one, delete the rest
+                    const toKeep = payments[0];
+                    const toDelete = payments.slice(1);
+                    
+                    for (const duplicate of toDelete) {
+                        try {
+                            await this.paymentStorage.deleteExpiredPayment(duplicate.id);
+                            this.payments.delete(duplicate.id);
+                            duplicatesDeleted++;
+                            console.log(`🗑️ Deleted duplicate payment with same TX signature: ${duplicate.id}`);
+                        } catch (error) {
+                            console.warn(`Failed to delete duplicate payment ${duplicate.id}:`, error);
+                        }
+                    }
+                }
+            }
+            
+            if (duplicatesDeleted > 0) {
+                console.log(`✅ Automatically deleted ${duplicatesDeleted} duplicate payment(s)`);
+            }
+        } catch (error) {
+            console.warn('Failed to check for duplicate payments:', error);
+        }
     }
     
     // Manual cleanup function - can be called to clean up all expired payments immediately
