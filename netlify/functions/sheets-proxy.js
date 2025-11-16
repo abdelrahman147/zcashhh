@@ -331,7 +331,9 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                 await createSheetTab(actualSheetId, sheetName, accessToken);
             }
             
-            const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${actualSheetId}/values/${sheetName}!A:append?valueInputOption=RAW`;
+            // Use proper range syntax for append - specify columns A through L (12 columns)
+            // Format: SheetName!A:L:append (same as leaderboard uses Sheet1!A:H:append)
+            const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${actualSheetId}/values/${sheetName}!A:L:append?valueInputOption=RAW`;
             const appendResponse = await fetch(appendUrl, {
                 method: 'POST',
                 headers: {
