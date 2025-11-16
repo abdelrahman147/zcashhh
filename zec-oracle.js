@@ -762,24 +762,46 @@ class SolanaPaymentOracle {
     
     // Extract transaction amount for a specific address
     extractTransactionAmount(tx, address) {
-        if (!tx.meta || !tx.meta.postBalances || !tx.meta.preBalances) {
+        try {
+            if (!tx || !tx.meta || !tx.meta.postBalances || !tx.meta.preBalances) {
+                return 0;
+            }
+            
+            // Check if transaction structure is valid
+            if (!tx.transaction || !tx.transaction.message || !tx.transaction.message.accountKeys) {
+                return 0;
+            }
+            
+            // Ensure accountKeys is an array
+            const accountKeys = tx.transaction.message.accountKeys;
+            if (!Array.isArray(accountKeys) || accountKeys.length === 0) {
+                return 0;
+            }
+            
+            // Find the account index for our address
+            const accountIndex = accountKeys.findIndex(
+                key => {
+                    try {
+                        return key && key.toString() === address.toString();
+                    } catch (e) {
+                        return false;
+                    }
+                }
+            );
+            
+            if (accountIndex === -1 || accountIndex >= tx.meta.preBalances.length || accountIndex >= tx.meta.postBalances.length) {
+                return 0;
+            }
+            
+            const preBalance = tx.meta.preBalances[accountIndex];
+            const postBalance = tx.meta.postBalances[accountIndex];
+            const change = (postBalance - preBalance) / 1e9; // Convert lamports to SOL
+            
+            return change > 0 ? change : 0; // Only return positive changes (incoming)
+        } catch (error) {
+            console.warn('Error extracting transaction amount:', error);
             return 0;
         }
-        
-        // Find the account index for our address
-        const accountIndex = tx.transaction.message.accountKeys.findIndex(
-            key => key.toString() === address.toString()
-        );
-        
-        if (accountIndex === -1) {
-            return 0;
-        }
-        
-        const preBalance = tx.meta.preBalances[accountIndex];
-        const postBalance = tx.meta.postBalances[accountIndex];
-        const change = (postBalance - preBalance) / 1e9; // Convert lamports to SOL
-        
-        return change > 0 ? change : 0; // Only return positive changes (incoming)
     }
 }
 
