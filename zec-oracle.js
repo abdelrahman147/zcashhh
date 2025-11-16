@@ -323,6 +323,11 @@ class SolanaPaymentOracle {
                 const pendingCount = allPayments.filter(p => p.status === 'pending').length;
                 console.log(`✅ Loaded ${allPayments.length} payments from Google Sheets (${verifiedCount} verified, ${pendingCount} pending)`);
                 
+                // Clean up expired payments immediately after loading
+                setTimeout(async () => {
+                    await this.cleanupExpiredPayments();
+                }, 2000); // Wait 2 seconds after loading to clean up
+                
             } catch (error) {
                 console.error('Failed to load payments from storage:', error);
             }
