@@ -169,15 +169,15 @@ exports.handler = async (event, context) => {
             const body = JSON.parse(event.body || '{}');
             const { signature } = body;
             
-            const payment = payments.get(paymentId);
+            let payment = payments.get(paymentId);
             if (!payment) {
                 // Try loading from Google Sheets as fallback
                 try {
-                    const sheetsProxyUrl = event.headers['x-forwarded-proto'] 
-                        ? `${event.headers['x-forwarded-proto']}://${event.headers.host}/api/sheets/payment`
-                        : `https://${event.headers.host}/api/sheets/payment`;
+                    const baseUrl = process.env.URL || 'https://zecit.online';
+                    const sheetsProxyUrl = `${baseUrl}/api/sheets/payments`;
+                    const sheetId = process.env.GOOGLE_SHEET_ID || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8';
                     
-                    const loadResponse = await fetch(`${sheetsProxyUrl}?sheetId=${process.env.GOOGLE_SHEET_ID || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8'}&sheetName=payment`, {
+                    const loadResponse = await fetch(`${sheetsProxyUrl}?sheetId=${sheetId}&sheetName=payment`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json'
@@ -191,8 +191,11 @@ exports.handler = async (event, context) => {
                             if (foundPayment) {
                                 payments.set(paymentId, foundPayment);
                                 payment = foundPayment;
+                                console.log(`✅ Loaded payment ${paymentId} from Google Sheets`);
                             }
                         }
+                    } else {
+                        console.warn(`⚠️ Failed to load payment from sheets: ${loadResponse.status}`);
                     }
                 } catch (err) {
                     console.warn('Failed to load payment from sheets:', err);
