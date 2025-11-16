@@ -889,6 +889,28 @@ class SolanaPaymentOracle {
             return 0;
         }
     }
+    
+    // Trigger UI update when payment status changes
+    triggerUIUpdate() {
+        // Reload payments from Google Sheets
+        setTimeout(async () => {
+            await this.loadPaymentsFromStorage();
+        }, 1000);
+        
+        // Trigger custom event for UI to update
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('payment-verified', {
+                detail: { timestamp: Date.now() }
+            }));
+        }
+        
+        // Also try to call loadOracleData if available
+        if (typeof window !== 'undefined' && typeof window.loadOracleData === 'function') {
+            setTimeout(() => {
+                window.loadOracleData();
+            }, 1500);
+        }
+    }
 }
 
 // Export
