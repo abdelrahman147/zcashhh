@@ -48,7 +48,13 @@ exports.handler = async function(event, context) {
         const accessToken = await getAccessToken(serviceAccount);
 
         // Handle payment storage endpoints
+        // Log the path for debugging
+        console.log(`[Sheets Proxy] Checking path: ${event.path}, Method: ${event.httpMethod}`);
+        console.log(`[Sheets Proxy] Path includes /payment: ${event.path.includes('/payment')}`);
+        console.log(`[Sheets Proxy] Path includes /payments: ${event.path.includes('/payments')}`);
+        
         if (event.path.includes('/payment') || event.path.includes('/payments')) {
+            console.log(`[Sheets Proxy] Routing to handlePaymentStorage`);
             return await handlePaymentStorage(event, accessToken, serviceAccount);
         }
         
@@ -274,12 +280,19 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
             sheetId = null; // Will trigger new sheet creation
         }
 
+        console.log(`[Payment Storage] Method: ${event.httpMethod}, Path: ${event.path}`);
+        console.log(`[Payment Storage] Body keys:`, Object.keys(body || {}));
+        
         if (event.httpMethod === 'POST' && event.path.includes('/payment')) {
             // Save payment
+            console.log(`[Payment Storage] Processing payment save request`);
             const payment = body.payment;
             if (!payment) {
+                console.error(`[Payment Storage] No payment data in body`);
                 return { statusCode: 400, headers, body: JSON.stringify({ success: false, error: 'Payment data required' }) };
             }
+            
+            console.log(`[Payment Storage] Payment ID: ${payment.id}, Amount: ${payment.amount}, Status: ${payment.status}`);
 
             // For payments, always create a new sheet if no sheetId provided (separate from leaderboard)
             let actualSheetId;
