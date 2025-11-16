@@ -638,20 +638,43 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
             const data = await readResponse.json();
             const rows = data.values || [];
             
-            const payments = rows.map(row => ({
-                id: row[0] || '',
-                amount: parseFloat(row[1] || 0),
-                currency: row[2] || 'USD',
-                token: row[3] || 'SOL',
-                solAmount: parseFloat(row[4] || 0),
-                orderId: row[5] || '',
-                merchantAddress: row[6] || '',
-                status: row[7] || 'pending',
-                transactionSignature: row[8] || '',
-                createdAt: new Date(row[9] || Date.now()).getTime(),
-                confirmedAt: row[10] ? new Date(row[10]).getTime() : null,
-                proof: row[11] ? JSON.parse(row[11]) : null
-            })).filter(p => p.id); // Return all payments, not just verified
+            const payments = rows.map(row => {
+                let proof = null;
+                try {
+                    if (row[11]) {
+                        proof = JSON.parse(row[11]);
+                    }
+                } catch (e) {
+                    // Invalid JSON, ignore
+                }
+                
+                const payment = {
+                    id: row[0] || '',
+                    amount: parseFloat(row[1] || 0),
+                    currency: row[2] || 'USD',
+                    token: row[3] || 'SOL',
+                    solAmount: parseFloat(row[4] || 0),
+                    orderId: row[5] || '',
+                    merchantAddress: row[6] || '',
+                    status: row[7] || 'pending',
+                    transactionSignature: row[8] || '',
+                    createdAt: new Date(row[9] || Date.now()).getTime(),
+                    confirmedAt: row[10] ? new Date(row[10]).getTime() : null,
+                    proof: proof
+                };
+                
+                // If payment has verified proof or transaction signature, ensure status is verified
+                if ((proof && proof.verified) || payment.transactionSignature) {
+                    if (payment.status !== 'verified') {
+                        payment.status = 'verified';
+                        if (!payment.confirmedAt) {
+                            payment.confirmedAt = Date.now();
+                        }
+                    }
+                }
+                
+                return payment;
+            }).filter(p => p.id); // Return all payments, not just verified
 
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, payments }) };
         } else if (event.httpMethod === 'DELETE') {
