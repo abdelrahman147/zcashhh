@@ -312,26 +312,28 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
             // This fixes the "Merchant Addre: Status" combined header issue
             await ensurePaymentSheet(actualSheetId, sheetName, accessToken);
 
-            // Append payment row - ensure all values are properly formatted
-            // Column mapping: A=ID, B=Amount, C=Currency, D=Token, E=TokenAmount, F=OrderID, G=MerchantAddress, H=Status, I=TransactionSignature, J=CreatedAt, K=ConfirmedAt, L=ZKProof
-            const values = [
-                String(payment.id || '').trim(),
-                String(payment.amount || 0),
-                String(payment.currency || 'USD'),
-                String(payment.token || 'SOL'),
-                String(payment.solAmount || payment.amount || 0),
-                String(payment.orderId || '').trim(),
-                String(payment.merchantAddress || '').trim(),
-                String(payment.status || 'pending'), // Ensure status is always set
-                String(payment.transactionSignature || '').trim(), // Transaction signature
-                payment.createdAt ? new Date(payment.createdAt).toISOString() : new Date().toISOString(),
-                payment.confirmedAt ? new Date(payment.confirmedAt).toISOString() : '',
-                JSON.stringify(payment.proof || {})
-            ];
-            
-            console.log(`[Payment Storage] Preparing to save payment ${payment.id}`);
-            console.log(`[Payment Storage] Status: "${payment.status}", Signature: "${payment.transactionSignature || 'N/A'}"`);
-            console.log(`[Payment Storage] Values array length: ${values.length}, Values:`, values);
+                // Append payment row - ensure all values are properly formatted
+                // Column mapping: A=ID, B=Amount, C=Currency, D=Token, E=TokenAmount, F=OrderID, G=MerchantAddress, H=Status, I=TransactionSignature, J=CreatedAt, K=ConfirmedAt, L=ZKProof
+                // CRITICAL: Use the FULL payment ID, not truncated, when updating
+                const fullPaymentId = String(payment.id || '').trim();
+                const values = [
+                    fullPaymentId, // Use full ID - Google Sheets may truncate display but we store full value
+                    String(payment.amount || 0),
+                    String(payment.currency || 'USD'),
+                    String(payment.token || 'SOL'),
+                    String(payment.solAmount || payment.amount || 0),
+                    String(payment.orderId || '').trim(),
+                    String(payment.merchantAddress || '').trim(),
+                    String(payment.status || 'pending'), // Ensure status is always set
+                    String(payment.transactionSignature || '').trim(), // Transaction signature
+                    payment.createdAt ? new Date(payment.createdAt).toISOString() : new Date().toISOString(),
+                    payment.confirmedAt ? new Date(payment.confirmedAt).toISOString() : '',
+                    JSON.stringify(payment.proof || {})
+                ];
+                
+                console.log(`[Payment Storage] Preparing values array for payment ${fullPaymentId}`);
+                console.log(`[Payment Storage]    Status: "${values[7]}", Signature: "${values[8]}"`);
+                console.log(`[Payment Storage]    Full values array:`, values);
 
             // Ensure the sheet tab exists before appending
             const tabExists = await checkSheetTabExists(actualSheetId, sheetName, accessToken);
@@ -362,20 +364,32 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                 const paymentIdToFind = String(payment.id || '').trim();
                 const paymentIdPrefix = paymentIdToFind.substring(0, 25); // First 25 chars for matching truncated IDs
                 console.log(`[Payment Storage] Searching for payment ID: "${paymentIdToFind}" (prefix: "${paymentIdPrefix}")`);
+                console.log(`[Payment Storage] Checking ${rows.length} rows for matches...`);
                 
                 for (let i = 0; i < rows.length; i++) {
                     const rowPaymentId = rows[i] && rows[i][0] ? String(rows[i][0]).trim() : '';
                     
-                    // Exact match OR prefix match (for truncated IDs in sheet)
-                    if (rowPaymentId === paymentIdToFind || 
-                        (rowPaymentId && paymentIdToFind.startsWith(rowPaymentId)) ||
-                        (rowPaymentId && rowPaymentId.startsWith(paymentIdPrefix))) {
-                        const rowIndex = i + 2; // +2 because: +1 for 0-based to 1-based, +1 for header row
+                    // Exact match
+                    if (rowPaymentId === paymentIdToFind) {
+                        const rowIndex = i + 2;
                         duplicateRowIndices.push(rowIndex);
-                        console.log(`[Payment Storage] ✅ Found match for payment "${paymentIdToFind}" at row ${rowIndex} (sheet has: "${rowPaymentId}")`);
-                        console.log(`[Payment Storage]    Row data: ${JSON.stringify(rows[i])}`);
+                        console.log(`[Payment Storage] ✅ Found EXACT match for payment "${paymentIdToFind}" at row ${rowIndex}`);
+                    }
+                    // Prefix match - if sheet has truncated ID, check if our full ID starts with it
+                    else if (rowPaymentId && paymentIdToFind.startsWith(rowPaymentId)) {
+                        const rowIndex = i + 2;
+                        duplicateRowIndices.push(rowIndex);
+                        console.log(`[Payment Storage] ✅ Found PREFIX match: sheet has "${rowPaymentId}", we have "${paymentIdToFind}" at row ${rowIndex}`);
+                    }
+                    // Reverse prefix match - if our ID is truncated in sheet, check if sheet ID starts with our prefix
+                    else if (rowPaymentId && rowPaymentId.startsWith(paymentIdPrefix) && paymentIdPrefix.length >= 20) {
+                        const rowIndex = i + 2;
+                        duplicateRowIndices.push(rowIndex);
+                        console.log(`[Payment Storage] ✅ Found REVERSE PREFIX match: sheet has "${rowPaymentId}", we have "${paymentIdToFind}" at row ${rowIndex}`);
                     }
                 }
+                
+                console.log(`[Payment Storage] Found ${duplicateRowIndices.length} matching row(s) for payment "${paymentIdToFind}"`);
                 
                 if (duplicateRowIndices.length > 0) {
                     // If there are duplicates, keep the FIRST one (oldest) and delete the rest
