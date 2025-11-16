@@ -341,23 +341,84 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
             });
             
             let existingRowIndex = null;
+            let duplicateRowIndices = [];
             if (readResponse.ok) {
                 const readData = await readResponse.json();
                 const rows = readData.values || [];
                 
                 console.log(`[Payment Storage] Checking ${rows.length} rows for payment ID: ${payment.id}`);
                 
-                // Find row index (1-based, +1 for header row, so +2 total)
-                // Check all rows, keep the last match (in case of duplicates)
+                // Find ALL rows with this payment ID (to handle duplicates)
                 for (let i = 0; i < rows.length; i++) {
                     if (rows[i] && rows[i][0] && rows[i][0].trim() === payment.id.trim()) {
-                        existingRowIndex = i + 2; // +2 because: +1 for 0-based to 1-based, +1 for header row
-                        console.log(`[Payment Storage] Found existing payment ${payment.id} at row ${existingRowIndex} (index ${i})`);
-                        // Don't break - keep checking to find the last match (in case of duplicates)
+                        const rowIndex = i + 2; // +2 because: +1 for 0-based to 1-based, +1 for header row
+                        duplicateRowIndices.push(rowIndex);
+                        console.log(`[Payment Storage] Found payment ${payment.id} at row ${rowIndex} (index ${i})`);
                     }
                 }
                 
-                if (existingRowIndex) {
+                if (duplicateRowIndices.length > 0) {
+                    // If there are duplicates, keep the FIRST one (oldest) and delete the rest
+                    existingRowIndex = duplicateRowIndices[0];
+                    
+                    if (duplicateRowIndices.length > 1) {
+                        console.log(`[Payment Storage] Found ${duplicateRowIndices.length} duplicate rows for ${payment.id}. Will keep row ${existingRowIndex} and delete the rest.`);
+                        
+                        // Delete duplicate rows (except the first one)
+                        // Get the actual sheet (tab) ID
+                        const spreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${actualSheetId}`;
+                        const spreadsheetResponse = await fetch(spreadsheetUrl, {
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`
+                            }
+                        });
+                        
+                        if (spreadsheetResponse.ok) {
+                            const spreadsheetData = await spreadsheetResponse.json();
+                            const paymentSheet = spreadsheetData.sheets.find(s => 
+                                s.properties.title.toLowerCase() === sheetName.toLowerCase()
+                            );
+                            
+                            if (paymentSheet) {
+                                const actualSheetTabId = paymentSheet.properties.sheetId;
+                                
+                                // Delete duplicate rows (from highest to lowest to maintain indices)
+                                const rowsToDelete = duplicateRowIndices.slice(1).sort((a, b) => b - a);
+                                const deleteRequests = rowsToDelete.map(rowIndex => ({
+                                    deleteDimension: {
+                                        range: {
+                                            sheetId: actualSheetTabId,
+                                            dimension: 'ROWS',
+                                            startIndex: rowIndex - 1,
+                                            endIndex: rowIndex
+                                        }
+                                    }
+                                }));
+                                
+                                if (deleteRequests.length > 0) {
+                                    const deleteUrl = `https://sheets.googleapis.com/v4/spreadsheets/${actualSheetId}:batchUpdate`;
+                                    const deleteResponse = await fetch(deleteUrl, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Authorization': `Bearer ${accessToken}`,
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            requests: deleteRequests
+                                        })
+                                    });
+                                    
+                                    if (deleteResponse.ok) {
+                                        console.log(`[Payment Storage] ✅ Deleted ${rowsToDelete.length} duplicate row(s) for payment ${payment.id}`);
+                                    } else {
+                                        const errorText = await deleteResponse.text();
+                                        console.warn(`[Payment Storage] ⚠️ Failed to delete duplicates: ${errorText}`);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     console.log(`[Payment Storage] Will update row ${existingRowIndex} with status: ${payment.status}`);
                 } else {
                     console.log(`[Payment Storage] Payment ${payment.id} not found in sheet, will append new row`);
