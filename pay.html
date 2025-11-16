@@ -423,12 +423,16 @@
                         payBtn.textContent = 'Getting latest blockhash...';
                         const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
                         
+                        if (!blockhash) {
+                            throw new Error('Failed to get blockhash from RPC');
+                        }
+                        
                         // Create transaction with fresh blockhash
-                        const transaction = new window.SolanaWeb3.Transaction({
-                            feePayer: publicKey,
-                            recentBlockhash: blockhash,
-                            lastValidBlockHeight: lastValidBlockHeight
-                        }).add(
+                        // Note: In newer Solana Web3.js, use recentBlockhash in constructor
+                        const transaction = new window.SolanaWeb3.Transaction();
+                        transaction.feePayer = publicKey;
+                        transaction.recentBlockhash = blockhash;
+                        transaction.add(
                             window.SolanaWeb3.SystemProgram.transfer({
                                 fromPubkey: publicKey,
                                 toPubkey: merchantPubkey,
