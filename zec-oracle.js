@@ -357,12 +357,25 @@ class SolanaPaymentOracle {
         // Only verified payments are used for all-time volume calculation
         // Expired pending payments will be deleted after 1 hour
         if (this.paymentStorage) {
-            await this.paymentStorage.savePayment(payment).catch(err => {
-                console.warn('Failed to save payment to sheets:', err);
-            });
-            if (payment.status === 'verified') {
-                console.log(`✅ Verified payment ${payment.id} saved to Google Sheets (used for all-time volume)`);
+            try {
+                console.log(`💾 Saving payment ${payment.id} to Google Sheets with status: ${payment.status}`);
+                const result = await this.paymentStorage.savePayment(payment);
+                if (result && result.success) {
+                    if (payment.status === 'verified') {
+                        console.log(`✅ Verified payment ${payment.id} saved/updated in Google Sheets (used for all-time volume)`);
+                        console.log(`   Transaction: ${payment.transactionSignature || 'N/A'}`);
+                        console.log(`   Confirmed: ${payment.confirmedAt ? new Date(payment.confirmedAt).toLocaleString() : 'N/A'}`);
+                    } else {
+                        console.log(`✅ Payment ${payment.id} saved to Google Sheets (status: ${payment.status})`);
+                    }
+                } else {
+                    console.warn(`⚠️ Failed to save payment ${payment.id} to sheets:`, result?.error || 'Unknown error');
+                }
+            } catch (err) {
+                console.error(`❌ Error saving payment ${payment.id} to sheets:`, err);
             }
+        } else {
+            console.warn(`⚠️ PaymentStorage not initialized, cannot save payment ${payment.id} to Google Sheets`);
         }
     }
     
