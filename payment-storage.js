@@ -182,29 +182,17 @@ if (typeof window !== 'undefined') {
         
         console.log(`🗑️ Deleting all instances of payment ${paymentId}...`);
         
-        // Delete multiple times to remove all duplicates
-        // The delete function will find and remove each instance
-        let deleted = 0;
-        let attempts = 0;
-        const maxAttempts = 10; // Safety limit
+        // The delete function now finds and deletes ALL instances at once
+        const result = await paymentStorage.deletePayment(paymentId);
         
-        while (attempts < maxAttempts) {
-            attempts++;
-            const result = await paymentStorage.deletePayment(paymentId);
-            if (result.success) {
-                deleted++;
-                console.log(`✅ Deleted instance ${deleted} of payment ${paymentId}`);
-                // Wait a bit before trying again
-                await new Promise(resolve => setTimeout(resolve, 500));
-            } else {
-                // No more instances found
-                console.log(`ℹ️ No more instances found after ${deleted} deletion(s)`);
-                break;
-            }
+        if (result.success) {
+            const deletedCount = result.deletedCount || 1;
+            console.log(`✅ Deleted ${deletedCount} instance(s) of payment ${paymentId} in one operation`);
+            return { deleted: deletedCount, attempts: 1 };
+        } else {
+            console.log(`ℹ️ No instances found or deletion failed: ${result.error || 'Unknown error'}`);
+            return { deleted: 0, attempts: 1, error: result.error };
         }
-        
-        console.log(`✅ Finished. Deleted ${deleted} instance(s) of payment ${paymentId}`);
-        return { deleted, attempts };
     };
 }
 

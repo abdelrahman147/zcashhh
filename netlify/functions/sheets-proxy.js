@@ -545,7 +545,7 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                 return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'No sheet to delete from' }) };
             }
             
-            // Find the row containing this payment ID
+            // Find ALL rows containing this payment ID
             // Payment ID is in column A (index 0)
             const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A2:A`;
             const readResponse = await fetch(readUrl, {
@@ -561,18 +561,17 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
             const readData = await readResponse.json();
             const rows = readData.values || [];
             
-            // Find the row index (1-based, +1 for header row)
-            let rowIndex = -1;
+            // Find ALL row indices that match this payment ID (1-based, +1 for header row)
+            const rowIndices = [];
             for (let i = 0; i < rows.length; i++) {
                 if (rows[i] && rows[i][0] === paymentId) {
-                    rowIndex = i + 2; // +2 because: +1 for 0-based to 1-based, +1 for header row
-                    break;
+                    rowIndices.push(i + 2); // +2 because: +1 for 0-based to 1-based, +1 for header row
                 }
             }
             
-            if (rowIndex === -1) {
+            if (rowIndices.length === 0) {
                 // Payment not found in sheet, but that's okay (might have been deleted already)
-                return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'Payment not found in sheet (may have been deleted already)' }) };
+                return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'Payment not found in sheet (may have been deleted already)', deletedCount: 0 }) };
             }
             
             // Get the actual sheet (tab) ID for the payment tab
@@ -598,7 +597,20 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
             
             const actualSheetId = paymentSheet.properties.sheetId;
             
-            // Delete the row using batchUpdate
+            // Delete ALL matching rows at once using batchUpdate
+            // Sort row indices in descending order to avoid index shifting issues
+            const sortedIndices = [...rowIndices].sort((a, b) => b - a);
+            const deleteRequests = sortedIndices.map(rowIndex => ({
+                deleteDimension: {
+                    range: {
+                        sheetId: actualSheetId,
+                        dimension: 'ROWS',
+                        startIndex: rowIndex - 1, // 0-based index
+                        endIndex: rowIndex // Delete single row
+                    }
+                }
+            }));
+            
             const deleteUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`;
             const deleteResponse = await fetch(deleteUrl, {
                 method: 'POST',
@@ -607,41 +619,17 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    requests: [{
-                        deleteDimension: {
-                            range: {
-                                sheetId: actualSheetId,
-                                dimension: 'ROWS',
-                                startIndex: rowIndex - 1, // 0-based index
-                                endIndex: rowIndex // Delete single row
-                            }
-                        }
-                    }]
+                    requests: deleteRequests
                 })
             });
             
             if (!deleteResponse.ok) {
                 const errorText = await deleteResponse.text();
-                console.error('Failed to delete row:', errorText);
-                // Try alternative: clear the row instead of deleting
-                const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A${rowIndex}:L${rowIndex}?valueInputOption=RAW`;
-                const clearResponse = await fetch(clearUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        values: [[]] // Empty row
-                    })
-                });
-                
-                if (!clearResponse.ok) {
-                    throw new Error(`Failed to delete/clear payment row: ${clearResponse.statusText}`);
-                }
+                console.error('Failed to delete rows:', errorText);
+                throw new Error(`Failed to delete payment rows: ${errorText}`);
             }
             
-            return { statusCode: 200, headers, body: JSON.stringify({ success: true, deletedRow: rowIndex }) };
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, deletedRows: sortedIndices, deletedCount: sortedIndices.length }) };
         }
     } catch (error) {
         console.error('Payment storage error:', error);
