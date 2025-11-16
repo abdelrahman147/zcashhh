@@ -652,11 +652,15 @@ class SolanaPaymentOracle {
             return; // Already monitoring
         }
         
-        console.log('🔍 Starting automatic payment monitoring...');
+        console.log('🔍 Starting automatic payment monitoring (checks every 1 minute)...');
         
+        // Check immediately when starting
+        this.checkPendingPayments();
+        
+        // Then check every 1 minute
         this.monitoringInterval = setInterval(async () => {
             await this.checkPendingPayments();
-        }, 10000); // Check every 10 seconds
+        }, 60000); // Check every 1 minute (60000ms)
     }
     
     // Stop payment monitoring
@@ -683,10 +687,13 @@ class SolanaPaymentOracle {
         
         try {
             // Get recent transactions for merchant address
+            // Check more transactions (100) to catch payments sent before monitoring started
             const publicKey = new window.SolanaWeb3.PublicKey(this.merchantAddress);
             const signatures = await this.solanaConnection.getSignaturesForAddress(publicKey, {
-                limit: 20
+                limit: 100 // Increased from 20 to catch older transactions
             });
+            
+            console.log(`🔍 Checking ${pendingPayments.length} pending payment(s) against ${signatures.length} recent transaction(s)...`);
             
             // Check each pending payment
             for (const payment of pendingPayments) {
@@ -735,10 +742,14 @@ class SolanaPaymentOracle {
                         const amount = this.extractTransactionAmount(tx, publicKey);
                         const timeDiff = Math.abs(tx.blockTime * 1000 - payment.createdAt);
                         
-                        // Transaction should be after payment creation and within 1 hour
+                        // Transaction should be within 24 hours of payment creation (extended window)
+                        // Also allow transactions slightly before payment creation (in case user sent manually first)
+                        const maxTimeDiff = 24 * 60 * 60 * 1000; // 24 hours
+                        const allowBeforeCreation = 5 * 60 * 1000; // Allow 5 minutes before payment creation
+                        
                         if (amount > 0 && 
-                            tx.blockTime * 1000 >= payment.createdAt && 
-                            timeDiff < 3600000 && // 1 hour
+                            (tx.blockTime * 1000 >= payment.createdAt - allowBeforeCreation) && 
+                            timeDiff < maxTimeDiff && // 24 hours
                             Math.abs(amount - payment.solAmount) < 0.00000001) {
                             
                             // Found matching transaction!
