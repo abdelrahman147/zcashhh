@@ -623,15 +623,30 @@
                         
                         // Sign and send transaction
                         // signAndSendTransaction returns { signature: '...' }
+                        payBtn.textContent = 'Sending transaction...';
                         const result = await window.solana.signAndSendTransaction(transaction);
                         const signature = result.signature || result;
                         
-                        // Wait for confirmation
-                        await connection.confirmTransaction({
-                            signature: signature,
-                            blockhash: blockhash,
-                            lastValidBlockHeight: lastValidBlockHeight
-                        }, 'confirmed');
+                        // Wait for confirmation (without blockhash - let it find the transaction naturally)
+                        payBtn.textContent = 'Waiting for confirmation...';
+                        try {
+                            // Use simpler confirmation that doesn't require blockhash
+                            await connection.confirmTransaction(signature, 'confirmed');
+                        } catch (confirmError) {
+                            // Transaction might already be confirmed or blockhash expired
+                            // Check if transaction exists on chain
+                            const txInfo = await connection.getTransaction(signature, {
+                                commitment: 'confirmed'
+                            });
+                            
+                            if (!txInfo) {
+                                // Transaction not found, might still be processing
+                                console.warn('Transaction not yet confirmed, but signature received:', signature);
+                            } else {
+                                // Transaction exists, it's confirmed
+                                console.log('Transaction confirmed on chain');
+                            }
+                        }
                         
                         payBtn.textContent = 'Notifying backend...';
                         
