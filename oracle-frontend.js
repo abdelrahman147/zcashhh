@@ -59,6 +59,55 @@
             });
         }
         
+        // Manual "Check Now" button
+        const checkPaymentsBtn = document.getElementById('check-payments-btn');
+        if (checkPaymentsBtn) {
+            checkPaymentsBtn.addEventListener('click', async () => {
+                if (!oracle) {
+                    alert('Oracle not initialized');
+                    return;
+                }
+                
+                checkPaymentsBtn.disabled = true;
+                checkPaymentsBtn.textContent = 'Checking...';
+                
+                try {
+                    console.log('🔍 Manual payment check triggered...');
+                    await oracle.checkPendingPayments();
+                    
+                    // Reload payments to show updated status
+                    if (oracle.loadPaymentsFromStorage) {
+                        await oracle.loadPaymentsFromStorage();
+                    }
+                    
+                    // Refresh display
+                    const allPayments = oracle.getAllPayments();
+                    const filterValue = paymentFilter ? paymentFilter.value : 'all';
+                    let filteredPayments = allPayments;
+                    
+                    if (filterValue === 'verified') {
+                        filteredPayments = allPayments.filter(p => p.status === 'verified');
+                    } else if (filterValue === 'pending') {
+                        filteredPayments = allPayments.filter(p => p.status === 'pending');
+                    } else if (filterValue === 'confirmed') {
+                        filteredPayments = allPayments.filter(p => p.status === 'verified' && p.confirmedAt);
+                    }
+                    
+                    displayPayments(filteredPayments);
+                    
+                    checkPaymentsBtn.textContent = 'Check Now';
+                    setTimeout(() => {
+                        checkPaymentsBtn.disabled = false;
+                    }, 2000);
+                } catch (error) {
+                    console.error('Error checking payments:', error);
+                    alert('Error checking payments: ' + error.message);
+                    checkPaymentsBtn.disabled = false;
+                    checkPaymentsBtn.textContent = 'Check Now';
+                }
+            });
+        }
+        
         // Payment verification
         const verifyBtn = document.getElementById('verify-payment-btn');
         if (verifyBtn) {

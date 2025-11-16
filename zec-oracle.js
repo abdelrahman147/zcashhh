@@ -739,8 +739,13 @@ class SolanaPaymentOracle {
                         }
                         
                         // Check if transaction is to merchant address and amount matches
-                        const amount = this.extractTransactionAmount(tx, publicKey);
+                        // Pass the token type to extractTransactionAmount for SPL token support
+                        const amount = this.extractTransactionAmount(tx, publicKey, payment.token || 'SOL');
                         const timeDiff = Math.abs(tx.blockTime * 1000 - payment.createdAt);
+                        
+                        console.log(`🔍 Checking transaction ${sigInfo.signature.substring(0, 20)}...`);
+                        console.log(`   Payment: ${payment.id}, Expected: ${payment.solAmount} ${payment.token || 'SOL'}, Found: ${amount} ${payment.token || 'SOL'}`);
+                        console.log(`   Time diff: ${Math.round(timeDiff / 1000)}s, Payment created: ${new Date(payment.createdAt).toLocaleString()}`);
                         
                         // Transaction should be within 24 hours of payment creation (extended window)
                         // Also allow transactions slightly before payment creation (in case user sent manually first)
@@ -786,10 +791,20 @@ class SolanaPaymentOracle {
         }
     }
     
-    // Extract transaction amount for a specific address
-    extractTransactionAmount(tx, address) {
+    // Extract transaction amount for a specific address (supports both SOL and SPL tokens)
+    extractTransactionAmount(tx, address, expectedToken = 'SOL') {
         try {
-            if (!tx || !tx.meta || !tx.meta.postBalances || !tx.meta.preBalances) {
+            if (!tx || !tx.meta) {
+                return 0;
+            }
+            
+            // For SPL tokens (USDT, USDC, etc.), check token account balances
+            if (expectedToken && expectedToken !== 'SOL') {
+                return this.extractSPLTokenAmount(tx, address, expectedToken);
+            }
+            
+            // For SOL, check balance changes
+            if (!tx.meta.postBalances || !tx.meta.preBalances) {
                 return 0;
             }
             
@@ -826,6 +841,57 @@ class SolanaPaymentOracle {
             return change > 0 ? change : 0; // Only return positive changes (incoming)
         } catch (error) {
             console.warn('Error extracting transaction amount:', error);
+            return 0;
+        }
+    }
+    
+    // Extract SPL token amount from transaction
+    extractSPLTokenAmount(tx, address, token) {
+        try {
+            if (!tx || !tx.meta || !tx.meta.postTokenBalances || !tx.meta.preTokenBalances) {
+                return 0;
+            }
+            
+            // Token mint addresses
+            const tokenMints = {
+                'USDC': 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                'USDT': 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+                'EURC': 'HzwqbKZw8HxNE6WvK5kfvm6hrKjXUYkLRPvXjrao1HGk'
+            };
+            
+            const expectedMint = tokenMints[token];
+            if (!expectedMint) {
+                return 0;
+            }
+            
+            // Find token account for our address
+            const postTokenBalances = tx.meta.postTokenBalances || [];
+            const preTokenBalances = tx.meta.preTokenBalances || [];
+            
+            // Look for token account that matches our address and token mint
+            for (const postBalance of postTokenBalances) {
+                if (postBalance.owner && postBalance.owner === address.toString() && 
+                    postBalance.mint && postBalance.mint === expectedMint) {
+                    
+                    // Find corresponding pre-balance
+                    const preBalance = preTokenBalances.find(
+                        pre => pre.accountIndex === postBalance.accountIndex
+                    );
+                    
+                    const preAmount = preBalance ? parseFloat(preBalance.uiTokenAmount.uiAmount || 0) : 0;
+                    const postAmount = parseFloat(postBalance.uiTokenAmount.uiAmount || 0);
+                    const change = postAmount - preAmount;
+                    
+                    if (change > 0) {
+                        console.log(`✅ Found ${token} transfer: ${change} (pre: ${preAmount}, post: ${postAmount})`);
+                        return change;
+                    }
+                }
+            }
+            
+            return 0;
+        } catch (error) {
+            console.warn('Error extracting SPL token amount:', error);
             return 0;
         }
     }
