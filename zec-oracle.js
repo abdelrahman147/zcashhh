@@ -477,7 +477,7 @@ class SolanaPaymentOracle {
             let duplicatesDeleted = 0;
             for (const [orderId, payments] of paymentsByOrderId.entries()) {
                 if (payments.length > 1) {
-                    console.log(`🔍 Found ${payments.length} payments with Order ID: ${orderId}`);
+                    console.log(`🔍 Found ${payments.length} duplicate payments with Order ID: ${orderId}`);
                     
                     // Sort: verified first, then by creation date (newest first)
                     payments.sort((a, b) => {
@@ -488,20 +488,21 @@ class SolanaPaymentOracle {
                         return bTime - aTime; // Newest first
                     });
                     
-                    // Keep the first one (best one), delete the rest
+                    // Keep ONLY the first one (best one), delete ALL the rest
                     const toKeep = payments[0];
-                    const toDelete = payments.slice(1);
+                    const toDelete = payments.slice(1); // All except the first one
                     
-                    console.log(`✅ Keeping payment ${toKeep.id} (status: ${toKeep.status}), deleting ${toDelete.length} duplicate(s)`);
+                    console.log(`✅ Keeping 1 payment: ${toKeep.id} (status: ${toKeep.status}, Order ID: ${orderId})`);
+                    console.log(`🗑️ Deleting ${toDelete.length} duplicate(s): ${toDelete.map(p => p.id).join(', ')}`);
                     
                     for (const duplicate of toDelete) {
                         try {
                             await this.paymentStorage.deleteExpiredPayment(duplicate.id);
                             this.payments.delete(duplicate.id);
                             duplicatesDeleted++;
-                            console.log(`🗑️ Deleted duplicate payment: ${duplicate.id}`);
+                            console.log(`   ✓ Deleted duplicate: ${duplicate.id}`);
                         } catch (error) {
-                            console.warn(`Failed to delete duplicate payment ${duplicate.id}:`, error);
+                            console.warn(`   ✗ Failed to delete duplicate ${duplicate.id}:`, error);
                         }
                     }
                 }
@@ -520,20 +521,23 @@ class SolanaPaymentOracle {
             
             for (const [txSig, payments] of paymentsByTxSig.entries()) {
                 if (payments.length > 1) {
-                    console.log(`🔍 Found ${payments.length} payments with same transaction signature: ${txSig.substring(0, 20)}...`);
+                    console.log(`🔍 Found ${payments.length} duplicate payments with same transaction signature: ${txSig.substring(0, 20)}...`);
                     
-                    // Keep the first one, delete the rest
+                    // Keep ONLY the first one, delete ALL the rest
                     const toKeep = payments[0];
-                    const toDelete = payments.slice(1);
+                    const toDelete = payments.slice(1); // All except the first one
+                    
+                    console.log(`✅ Keeping 1 payment: ${toKeep.id} (TX: ${txSig.substring(0, 20)}...)`);
+                    console.log(`🗑️ Deleting ${toDelete.length} duplicate(s): ${toDelete.map(p => p.id).join(', ')}`);
                     
                     for (const duplicate of toDelete) {
                         try {
                             await this.paymentStorage.deleteExpiredPayment(duplicate.id);
                             this.payments.delete(duplicate.id);
                             duplicatesDeleted++;
-                            console.log(`🗑️ Deleted duplicate payment with same TX signature: ${duplicate.id}`);
+                            console.log(`   ✓ Deleted duplicate: ${duplicate.id}`);
                         } catch (error) {
-                            console.warn(`Failed to delete duplicate payment ${duplicate.id}:`, error);
+                            console.warn(`   ✗ Failed to delete duplicate ${duplicate.id}:`, error);
                         }
                     }
                 }
