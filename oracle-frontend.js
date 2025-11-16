@@ -33,6 +33,14 @@
         
         setupOracleEventListeners();
         loadOracleData();
+        
+        // Listen for payment verification events to auto-refresh UI
+        window.addEventListener('payment-verified', () => {
+            console.log('🔄 Payment verified event received, refreshing UI...');
+            setTimeout(() => {
+                loadOracleData();
+            }, 500);
+        });
     }
     
     function setupOracleEventListeners() {
@@ -315,8 +323,12 @@
         displaySheetLink();
         
         // Auto-refresh every 5 seconds to show updated payment status
+        // This ensures verified payments appear automatically
         setTimeout(loadOracleData, 5000);
     }
+    
+    // Expose loadOracleData globally so oracle can trigger it
+    window.loadOracleData = loadOracleData;
     
     function displaySheetLink() {
         if (!oracle || !oracle.paymentStorage) return;

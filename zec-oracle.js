@@ -582,10 +582,8 @@ class SolanaPaymentOracle {
             // Trigger webhook if configured
             await this.triggerWebhook(payment);
             
-            // Reload payments from Google Sheets to ensure UI is updated
-            setTimeout(async () => {
-                await this.loadPaymentsFromStorage();
-            }, 1000);
+            // Trigger UI update immediately
+            this.triggerUIUpdate();
         }
         
         return verification;
@@ -713,12 +711,10 @@ class SolanaPaymentOracle {
                             this.payments.set(payment.id, payment);
                             await this.savePaymentToBackend(payment);
                             await this.triggerWebhook(payment);
-                            console.log(`✅ Payment ${payment.id} verified!`);
+                            console.log(`✅ Payment ${payment.id} automatically verified!`);
                             
-                            // Reload payments from Google Sheets to ensure UI is updated
-                            setTimeout(async () => {
-                                await this.loadPaymentsFromStorage();
-                            }, 1000);
+                            // Trigger UI update immediately
+                            this.triggerUIUpdate();
                         }
                     } catch (error) {
                         console.warn(`Failed to verify transaction for payment ${payment.id}:`, error);
@@ -773,12 +769,10 @@ class SolanaPaymentOracle {
                             await this.savePaymentToBackend(payment);
                             await this.triggerWebhook(payment);
                             
-                            console.log(`✅ Payment ${payment.id} verified via transaction ${sigInfo.signature}`);
+                            console.log(`✅ Payment ${payment.id} automatically verified via transaction ${sigInfo.signature}`);
                             
-                            // Reload payments from Google Sheets to ensure UI is updated
-                            setTimeout(async () => {
-                                await this.loadPaymentsFromStorage();
-                            }, 1000);
+                            // Trigger UI update immediately
+                            this.triggerUIUpdate();
                             break;
                         }
                     } catch (error) {
