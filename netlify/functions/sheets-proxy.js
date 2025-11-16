@@ -294,11 +294,15 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
             
             console.log(`[Payment Storage] Payment ID: ${payment.id}, Amount: ${payment.amount}, Status: ${payment.status}`);
 
-            // For payments, always create a new sheet if no sheetId provided (separate from leaderboard)
+            // For payments, use existing sheet if no sheetId provided
+            // Try to use the leaderboard sheet first, or create tab in it
             let actualSheetId;
             if (!sheetId) {
-                // Create a brand new sheet for payments
-                actualSheetId = await createNewPaymentSheet(accessToken);
+                // Try to use the leaderboard sheet ID from environment or default
+                // This avoids permission issues with creating new sheets
+                const defaultSheetId = process.env.GOOGLE_SHEET_ID || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8';
+                console.log(`[Payment Storage] No sheet ID provided, using default sheet: ${defaultSheetId}`);
+                actualSheetId = await ensurePaymentSheet(defaultSheetId, sheetName, accessToken);
             } else {
                 // Use existing sheet or create tab if needed
                 actualSheetId = await ensurePaymentSheet(sheetId, sheetName, accessToken);
