@@ -324,6 +324,13 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                 JSON.stringify(payment.proof || {})
             ];
 
+            // Ensure the sheet tab exists before appending
+            const tabExists = await checkSheetTabExists(actualSheetId, sheetName, accessToken);
+            if (!tabExists) {
+                console.log(`[Payment Storage] Tab "${sheetName}" doesn't exist, creating it...`);
+                await createSheetTab(actualSheetId, sheetName, accessToken);
+            }
+            
             const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${actualSheetId}/values/${sheetName}!A:append?valueInputOption=RAW`;
             const appendResponse = await fetch(appendUrl, {
                 method: 'POST',
@@ -834,6 +841,85 @@ async function ensurePaymentSheet(sheetId, sheetName, accessToken) {
         } catch (createError) {
             throw new Error(`Failed to ensure or create payment sheet: ${createError.message}`);
         }
+    }
+}
+
+/**
+ * Check if a sheet tab exists
+ */
+async function checkSheetTabExists(sheetId, tabName, accessToken) {
+    try {
+        const metadataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+        const response = await fetch(metadataUrl, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        
+        if (!response.ok) {
+            return false;
+        }
+        
+        const metadata = await response.json();
+        return metadata.sheets?.some(s => s.properties.title === tabName) || false;
+    } catch (error) {
+        console.error('Error checking sheet tab:', error);
+        return false;
+    }
+}
+
+/**
+ * Create a new sheet tab
+ */
+async function createSheetTab(sheetId, tabName, accessToken) {
+    try {
+        const batchUpdateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`;
+        const response = await fetch(batchUpdateUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                requests: [{
+                    addSheet: {
+                        properties: {
+                            title: tabName,
+                            gridProperties: {
+                                rowCount: 1000,
+                                columnCount: 12
+                            }
+                        }
+                    }
+                }]
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Failed to create sheet tab: ${error}`);
+        }
+        
+        // Add headers to the new tab
+        const headers = [
+            'Payment ID', 'Amount (USD)', 'Currency', 'Token', 'Token Amount',
+            'Order ID', 'Merchant Address', 'Status', 'Transaction Signature',
+            'Created At', 'Confirmed At', 'ZK Proof'
+        ];
+        
+        const headersUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${tabName}!A1:L1?valueInputOption=RAW`;
+        await fetch(headersUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ values: [headers] })
+        });
+        
+        console.log(`✅ Created sheet tab "${tabName}" with headers`);
+        return true;
+    } catch (error) {
+        console.error('Failed to create sheet tab:', error);
+        throw error;
     }
 }
 
