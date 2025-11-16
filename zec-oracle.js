@@ -1000,8 +1000,7 @@ class SolanaPaymentOracle {
             }, 1500);
         }
     }
-}
-
+    
     // Manual check function for immediate verification
     async manualCheckPayment(paymentId) {
         console.log(`🔍 Manual check requested for payment: ${paymentId}`);
