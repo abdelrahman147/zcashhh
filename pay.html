@@ -465,15 +465,6 @@
                         
                         const merchantPubkey = new window.SolanaWeb3.PublicKey(payment.merchantAddress);
                         
-                        // Calculate lamports (handle different tokens)
-                        let lamports = 0;
-                        if (token === 'SOL') {
-                            lamports = Math.floor(solAmount * 1e9);
-                        } else {
-                            // For SPL tokens, would need different handling
-                            lamports = Math.floor(solAmount * 1e9); // Default to SOL for now
-                        }
-                        
                         payBtn.textContent = 'Preparing transaction...';
                         
                         // Create connection
@@ -490,20 +481,74 @@
                         }
                         
                         // Create transaction with fresh blockhash
-                        // Use the constructor with all required fields
                         const transaction = new window.SolanaWeb3.Transaction({
                             feePayer: publicKey,
                             recentBlockhash: blockhash
                         });
                         
-                        // Add transfer instruction
-                        transaction.add(
-                            window.SolanaWeb3.SystemProgram.transfer({
-                                fromPubkey: publicKey,
-                                toPubkey: merchantPubkey,
-                                lamports: lamports
-                            })
-                        );
+                        // Handle different token types
+                        if (token === 'SOL') {
+                            // SOL transfer
+                            const lamports = Math.floor(solAmount * 1e9);
+                            transaction.add(
+                                window.SolanaWeb3.SystemProgram.transfer({
+                                    fromPubkey: publicKey,
+                                    toPubkey: merchantPubkey,
+                                    lamports: lamports
+                                })
+                            );
+                        } else {
+                            // SPL Token transfer (USDT, USDC, EURC, etc.)
+                            const tokenMints = {
+                                'USDC': 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                                'USDT': 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+                                'EURC': 'HzwqbKZw8HxNE6WvK5kfvm6hrKjXUYkLRPvXjrao1HGk'
+                            };
+                            
+                            const tokenMint = tokenMints[token];
+                            if (!tokenMint) {
+                                throw new Error(`Unsupported token: ${token}`);
+                            }
+                            
+                            const mintPubkey = new window.SolanaWeb3.PublicKey(tokenMint);
+                            const tokenDecimals = 6; // USDT, USDC, EURC all have 6 decimals
+                            const tokenAmount = Math.floor(solAmount * Math.pow(10, tokenDecimals));
+                            
+                            // Get associated token accounts
+                            const senderTokenAccount = await window.SolanaWeb3.getAssociatedTokenAddress(
+                                mintPubkey,
+                                publicKey
+                            );
+                            
+                            const receiverTokenAccount = await window.SolanaWeb3.getAssociatedTokenAddress(
+                                mintPubkey,
+                                merchantPubkey
+                            );
+                            
+                            // Check if receiver token account exists, create if not
+                            const receiverAccountInfo = await connection.getAccountInfo(receiverTokenAccount);
+                            if (!receiverAccountInfo) {
+                                transaction.add(
+                                    window.SolanaWeb3.createAssociatedTokenAccountInstruction(
+                                        publicKey, // payer
+                                        receiverTokenAccount, // ata
+                                        merchantPubkey, // owner
+                                        mintPubkey // mint
+                                    )
+                                );
+                            }
+                            
+                            // Add token transfer instruction
+                            transaction.add(
+                                window.SolanaWeb3.createTransferInstruction(
+                                    senderTokenAccount, // source
+                                    receiverTokenAccount, // destination
+                                    publicKey, // owner
+                                    tokenAmount, // amount in token's native decimals
+                                    [] // signers (empty, wallet will sign)
+                                )
+                            );
+                        }
                         
                         // Verify blockhash is set (double-check)
                         if (!transaction.recentBlockhash) {
