@@ -581,9 +581,21 @@
                                 ];
                                 
                                 // Token transfer instruction data: instruction (3) + amount (8 bytes)
-                                const transferData = Buffer.alloc(9);
-                                transferData.writeUInt8(3, 0); // Transfer instruction
-                                transferData.writeBigUInt64LE(tokenAmount, 1);
+                                // Create instruction data manually
+                                const instructionCode = 3; // Transfer instruction
+                                const amountBytes = new Uint8Array(8);
+                                
+                                // Convert BigInt to 8-byte little-endian array
+                                let amount = tokenAmount;
+                                for (let i = 0; i < 8; i++) {
+                                    amountBytes[i] = Number(amount & 0xFFn);
+                                    amount = amount >> 8n;
+                                }
+                                
+                                // Combine instruction code + amount
+                                const transferData = new Uint8Array(9);
+                                transferData[0] = instructionCode;
+                                transferData.set(amountBytes, 1);
                                 
                                 const transferInstruction = new window.SolanaWeb3.TransactionInstruction({
                                     keys: transferKeys,
