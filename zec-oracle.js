@@ -231,13 +231,7 @@ class SolanaPaymentOracle {
             
             this.payments.set(payment.id, payment);
             
-            // Save to backend (temporary storage)
-            await this.savePaymentToBackend(payment);
-            
-            // Save ALL payments (pending and verified) to Google Sheets for persistence
-            // This ensures payments don't disappear on refresh
-            // Only verified payments are used for all-time volume calculation
-            // Expired pending payments will be deleted after 1 hour
+            // Ensure PaymentStorage is initialized before saving
             if (!this.paymentStorage) {
                 console.log('🔄 PaymentStorage not initialized, attempting to initialize...');
                 const initialized = await this.initPaymentStorage();
@@ -247,34 +241,10 @@ class SolanaPaymentOracle {
                 }
             }
             
-            if (this.paymentStorage) {
-                try {
-                    console.log(`💾 Attempting to save payment ${payment.id} to Google Sheets...`);
-                    const saveResult = await this.paymentStorage.savePayment(payment);
-                    if (saveResult && saveResult.success) {
-                        console.log(`✅ Payment ${payment.id} saved to Google Sheets successfully!`);
-                        if (saveResult.result && saveResult.result.sheetId) {
-                            console.log(`📊 Sheet ID: ${saveResult.result.sheetId}`);
-                        }
-                    } else {
-                        console.error(`❌ Payment ${payment.id} save failed. Result:`, saveResult);
-                        if (saveResult && saveResult.error) {
-                            console.error(`❌ Error: ${saveResult.error}`);
-                        }
-                    }
-                } catch (err) {
-                    console.error(`❌ Exception while saving payment ${payment.id} to sheets:`, err);
-                    console.error(`❌ Error stack:`, err.stack);
-                }
-            } else {
-                console.error('❌ Payment storage not available, payment will not persist across refreshes');
-                console.error('❌ Payment data:', {
-                    id: payment.id,
-                    amount: payment.amount,
-                    status: payment.status,
-                    createdAt: new Date(payment.createdAt).toISOString()
-                });
-            }
+            // Save to backend (temporary storage) - this also saves to Google Sheets
+            // savePaymentToBackend internally calls paymentStorage.savePayment() at line 379
+            // So we don't need to call it again here to avoid duplicate saves
+            await this.savePaymentToBackend(payment);
             
             // Trigger webhook
             if (window.webhookSystem) {
