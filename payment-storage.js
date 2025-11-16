@@ -138,8 +138,16 @@ class PaymentStorage {
                 throw new Error(`HTTP ${response.status}`);
             }
 
-            console.log(`🗑️ Deleted expired payment ${paymentId}`);
-            return { success: true };
+            const result = await response.json();
+            const deletedCount = result.deletedCount || 0;
+            
+            if (deletedCount > 0) {
+                console.log(`🗑️ Deleted ${deletedCount} instance(s) of payment ${paymentId}`);
+            } else {
+                console.log(`ℹ️ Payment ${paymentId} not found in sheet (may have been deleted already)`);
+            }
+            
+            return { success: true, deletedCount: deletedCount };
         } catch (error) {
             console.error(`❌ Failed to delete payment ${paymentId}:`, error);
             return { success: false, error: error.message };
