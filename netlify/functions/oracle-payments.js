@@ -171,6 +171,35 @@ exports.handler = async (event, context) => {
             
             const payment = payments.get(paymentId);
             if (!payment) {
+                // Try loading from Google Sheets as fallback
+                try {
+                    const sheetsProxyUrl = event.headers['x-forwarded-proto'] 
+                        ? `${event.headers['x-forwarded-proto']}://${event.headers.host}/api/sheets/payment`
+                        : `https://${event.headers.host}/api/sheets/payment`;
+                    
+                    const loadResponse = await fetch(`${sheetsProxyUrl}?sheetId=${process.env.GOOGLE_SHEET_ID || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8'}&sheetName=payment`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (loadResponse.ok) {
+                        const loadData = await loadResponse.json();
+                        if (loadData.payments && Array.isArray(loadData.payments)) {
+                            const foundPayment = loadData.payments.find(p => p.id === paymentId);
+                            if (foundPayment) {
+                                payments.set(paymentId, foundPayment);
+                                payment = foundPayment;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Failed to load payment from sheets:', err);
+                }
+            }
+            
+            if (!payment) {
                 return {
                     statusCode: 404,
                     headers: {
@@ -186,6 +215,40 @@ exports.handler = async (event, context) => {
             payment.status = 'verified';
             payment.confirmedAt = Date.now();
             payments.set(paymentId, payment);
+            
+            // Also save to Google Sheets immediately
+            try {
+                // Construct the sheets-proxy URL correctly for Netlify
+                const baseUrl = process.env.URL || 'https://zecit.online';
+                const sheetsProxyUrl = `${baseUrl}/api/sheets/payment`;
+                
+                console.log(`💾 Saving verified payment ${paymentId} to Google Sheets via: ${sheetsProxyUrl}`);
+                
+                const saveResponse = await fetch(sheetsProxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        payment: payment,
+                        sheetId: process.env.GOOGLE_SHEET_ID || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8',
+                        sheetName: 'payment'
+                    })
+                });
+                
+                if (saveResponse.ok) {
+                    const saveResult = await saveResponse.json();
+                    console.log(`✅ Payment ${paymentId} verified and saved to Google Sheets`);
+                    console.log(`   Sheet ID: ${saveResult.sheetId || 'N/A'}`);
+                } else {
+                    const errorText = await saveResponse.text();
+                    console.error(`⚠️ Failed to save verified payment to sheets:`, errorText);
+                    console.error(`   Status: ${saveResponse.status}`);
+                }
+            } catch (err) {
+                console.error(`❌ Error saving verified payment to sheets:`, err);
+                // Don't fail the verification if sheets save fails
+            }
             
             return {
                 statusCode: 200,
