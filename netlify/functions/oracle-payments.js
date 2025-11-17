@@ -135,7 +135,8 @@ exports.handler = async (event, context) => {
             // Handle /payments/:id/verify
             if (lastPart === 'verify' && secondLastPart) {
                 const paymentId = secondLastPart;
-                const payment = payments.get(paymentId);
+                // SIMPLIFIED: Always load from Google Sheets (single source of truth)
+                const payment = await loadPaymentFromSheets(paymentId);
                 if (!payment) {
                     return {
                         statusCode: 404,
