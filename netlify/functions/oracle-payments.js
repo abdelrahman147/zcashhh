@@ -246,7 +246,20 @@ exports.handler = async (event, context) => {
             } else {
                 // Get all payments
                 // Try to load from Google Sheets if memory is empty
-                let allPayments = Array.from(payments.values());
+                // SIMPLIFIED: Load all payments from Google Sheets (single source of truth)
+                let allPayments = [];
+                try {
+                    const sheetId = '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8';
+                    const sheetName = 'payment';
+                    const sheetsUrl = `https://zecit.online/api/sheets/payments?sheetId=${sheetId}&sheetName=${sheetName}`;
+                    const response = await fetch(sheetsUrl);
+                    if (response.ok) {
+                        const data = await response.json();
+                        allPayments = data.payments || [];
+                    }
+                } catch (err) {
+                    console.error('Failed to load payments from sheets:', err);
+                }
                 
                 if (allPayments.length === 0) {
                     // Try loading from Google Sheets
@@ -284,9 +297,10 @@ exports.handler = async (event, context) => {
             const body = JSON.parse(event.body || '{}');
             const { signature } = body;
             
-            let payment = payments.get(paymentId);
+            // SIMPLIFIED: Always load from Google Sheets (single source of truth)
+            let payment = await loadPaymentFromSheets(paymentId);
             if (!payment) {
-                // Try loading from Google Sheets as fallback
+                // Try loading from Google Sheets with different method
                 try {
                     const baseUrl = process.env.URL || 'https://zecit.online';
                     const sheetsProxyUrl = `${baseUrl}/api/sheets/payments`;
