@@ -392,7 +392,9 @@ exports.handler = async (event, context) => {
                     createdAt: payment.createdAt || Date.now()
                 };
                 
-                console.log(`   Payment to save:`, JSON.stringify(paymentToSave, null, 2));
+                console.log(`[Oracle Payments]    Payment to save:`, JSON.stringify(paymentToSave, null, 2));
+                console.log(`[Oracle Payments]    Full payment object keys:`, Object.keys(paymentToSave));
+                console.log(`[Oracle Payments]    Payment ID: "${paymentToSave.id}", Order ID: "${paymentToSave.orderId}"`);
                 
                 const saveResponse = await fetch(sheetsProxyUrl, {
                     method: 'POST',
@@ -410,11 +412,37 @@ exports.handler = async (event, context) => {
                     const saveResult = await saveResponse.json();
                     console.log(`[Oracle Payments] ✅ Payment ${paymentId} saved to Google Sheets successfully`);
                     console.log(`[Oracle Payments]    Sheet ID: ${saveResult.sheetId || 'N/A'}`);
+                    console.log(`[Oracle Payments]    Response:`, JSON.stringify(saveResult));
                 } else {
                     const errorText = await saveResponse.text();
-                    console.error(`[Oracle Payments] ❌ Failed to save: HTTP ${saveResponse.status}`);
+                    console.error(`[Oracle Payments] ❌❌❌ CRITICAL: Failed to save to Google Sheets: HTTP ${saveResponse.status}`);
                     console.error(`[Oracle Payments]    Error: ${errorText}`);
                     console.error(`[Oracle Payments]    Payment ID: ${paymentId}, Status: ${payment.status}, Signature: ${txSignature}`);
+                    console.error(`[Oracle Payments]    Order ID: ${payment.orderId}`);
+                    console.error(`[Oracle Payments]    Sheets URL: ${sheetsProxyUrl}`);
+                    
+                    // RETRY immediately
+                    console.log(`[Oracle Payments] 🔄 RETRYING save to Google Sheets...`);
+                    try {
+                        const retryResponse = await fetch(sheetsProxyUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                payment: paymentToSave,
+                                sheetId: process.env.GOOGLE_SHEET_ID || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8',
+                                sheetName: 'payment'
+                            })
+                        });
+                        if (retryResponse.ok) {
+                            console.log(`[Oracle Payments] ✅ RETRY SUCCESS - Payment saved to Google Sheets`);
+                        } else {
+                            console.error(`[Oracle Payments] ❌ RETRY FAILED:`, await retryResponse.text());
+                        }
+                    } catch (retryErr) {
+                        console.error(`[Oracle Payments] ❌ RETRY ERROR:`, retryErr);
+                    }
                 }
             } catch (err) {
                 console.error(`[Oracle Payments] ❌ Error saving to sheets:`, err);
