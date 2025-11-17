@@ -359,40 +359,31 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                 
                 console.log(`[Payment Storage] Checking ${rows.length} rows for payment ID: ${payment.id}, Order ID: ${payment.orderId}`);
                 
-                // Find ALL rows with this payment ID (to handle duplicates and truncation)
-                // Match by exact payment ID OR by first part (in case of truncation in sheet)
+                // SIMPLIFIED: Use Order ID as primary key (never truncated, always unique)
+                // This is the SIMPLEST and MOST RELIABLE matching method
+                const orderIdToFind = payment.orderId ? String(payment.orderId).trim() : null;
                 const paymentIdToFind = String(payment.id || '').trim();
-                const paymentIdPrefix = paymentIdToFind.substring(0, 25); // First 25 chars for matching truncated IDs
-                console.log(`[Payment Storage] Searching for payment ID: "${paymentIdToFind}" (prefix: "${paymentIdPrefix}")`);
-                console.log(`[Payment Storage] Checking ${rows.length} rows for matches...`);
+                
+                console.log(`[Payment Storage] 🔍 SIMPLIFIED MATCHING: Looking for Order ID: "${orderIdToFind}" or Payment ID: "${paymentIdToFind}"`);
+                console.log(`[Payment Storage] Checking ${rows.length} rows...`);
                 
                 for (let i = 0; i < rows.length; i++) {
-                    const rowPaymentId = rows[i] && rows[i][0] ? String(rows[i][0]).trim() : '';
                     const rowOrderId = rows[i] && rows[i][5] ? String(rows[i][5]).trim() : '';
+                    const rowPaymentId = rows[i] && rows[i][0] ? String(rows[i][0]).trim() : '';
                     
-                    // Exact match
-                    if (rowPaymentId === paymentIdToFind) {
+                    // PRIMARY: Match by Order ID (most reliable, never truncated)
+                    if (orderIdToFind && rowOrderId === orderIdToFind) {
                         const rowIndex = i + 2;
                         duplicateRowIndices.push(rowIndex);
-                        console.log(`[Payment Storage] ✅ Found EXACT match for payment "${paymentIdToFind}" at row ${rowIndex}`);
+                        if (!existingRowIndex) existingRowIndex = rowIndex;
+                        console.log(`[Payment Storage] ✅✅✅ FOUND BY ORDER ID (PRIMARY): "${rowOrderId}" at row ${rowIndex}`);
                     }
-                    // Prefix match - if sheet has truncated ID, check if our full ID starts with it
-                    else if (rowPaymentId && paymentIdToFind.startsWith(rowPaymentId)) {
+                    // FALLBACK: Match by Payment ID (exact only, no prefix matching complexity)
+                    else if (paymentIdToFind && rowPaymentId === paymentIdToFind) {
                         const rowIndex = i + 2;
                         duplicateRowIndices.push(rowIndex);
-                        console.log(`[Payment Storage] ✅ Found PREFIX match: sheet has "${rowPaymentId}", we have "${paymentIdToFind}" at row ${rowIndex}`);
-                    }
-                    // Reverse prefix match - if our ID is truncated in sheet, check if sheet ID starts with our prefix
-                    else if (rowPaymentId && rowPaymentId.startsWith(paymentIdPrefix) && paymentIdPrefix.length >= 20) {
-                        const rowIndex = i + 2;
-                        duplicateRowIndices.push(rowIndex);
-                        console.log(`[Payment Storage] ✅ Found REVERSE PREFIX match: sheet has "${rowPaymentId}", we have "${paymentIdToFind}" at row ${rowIndex}`);
-                    }
-                    // FALLBACK: Match by Order ID if payment ID matching fails
-                    else if (payment.orderId && rowOrderId && rowOrderId === String(payment.orderId).trim()) {
-                        const rowIndex = i + 2;
-                        duplicateRowIndices.push(rowIndex);
-                        console.log(`[Payment Storage] ✅ Found ORDER ID match: "${rowOrderId}" at row ${rowIndex} (payment ID match failed, using Order ID fallback)`);
+                        if (!existingRowIndex) existingRowIndex = rowIndex;
+                        console.log(`[Payment Storage] ✅ Found by Payment ID (FALLBACK): "${rowPaymentId}" at row ${rowIndex}`);
                     }
                 }
                 

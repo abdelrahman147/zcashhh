@@ -260,10 +260,7 @@ exports.handler = async (event, context) => {
                             const sheetsData = await sheetsResponse.json();
                             allPayments = sheetsData.payments || [];
                             
-                            // Cache in memory
-                            allPayments.forEach(payment => {
-                                payments.set(payment.id, payment);
-                            });
+                            // SIMPLIFIED: No in-memory cache - Google Sheets is single source of truth
                         }
                     } catch (error) {
                         console.error('Failed to load payments from Google Sheets:', error);
@@ -307,7 +304,6 @@ exports.handler = async (event, context) => {
                         if (loadData.payments && Array.isArray(loadData.payments)) {
                             const foundPayment = loadData.payments.find(p => p.id === paymentId);
                             if (foundPayment) {
-                                payments.set(paymentId, foundPayment);
                                 payment = foundPayment;
                                 console.log(`✅ Loaded payment ${paymentId} from Google Sheets`);
                             }
@@ -390,9 +386,9 @@ exports.handler = async (event, context) => {
             payment.confirmedAt = blockTime ? blockTime * 1000 : (body.confirmedAt || payment.confirmedAt || Date.now());
             payment.blockTime = blockTime;
             payment.slot = slot;
-            payments.set(paymentId, payment);
+            // SIMPLIFIED: No in-memory cache - Google Sheets is source of truth
             
-            console.log(`[Oracle Payments] ✅ Payment ${paymentId} updated in memory`);
+            console.log(`[Oracle Payments] ✅ Payment ${paymentId} ready to save to Google Sheets`);
             console.log(`[Oracle Payments]    Status: ${payment.status} (${blockchainVerified ? 'BLOCKCHAIN VERIFIED' : body.status || 'pending'})`);
             console.log(`[Oracle Payments]    Signature: ${txSignature}`);
             console.log(`[Oracle Payments]    Confirmed: ${new Date(payment.confirmedAt).toISOString()}`);
