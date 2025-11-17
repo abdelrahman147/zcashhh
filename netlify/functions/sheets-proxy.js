@@ -402,7 +402,9 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                     // If there are duplicates, keep the FIRST one (oldest) and delete the rest
                     existingRowIndex = duplicateRowIndices[0];
                     
-                    console.log(`[Payment Storage] ✅ FOUND EXISTING PAYMENT at row ${existingRowIndex}`);
+                    console.log(`[Payment Storage] ✅✅✅ FOUND EXISTING PAYMENT at row ${existingRowIndex}`);
+                    console.log(`[Payment Storage]    Payment ID in sheet: "${rows[existingRowIndex - 2]?.[0] || 'N/A'}"`);
+                    console.log(`[Payment Storage]    Order ID in sheet: "${rows[existingRowIndex - 2]?.[5] || 'N/A'}"`);
                     console.log(`[Payment Storage]    Will update this row with status: "${payment.status}", signature: "${payment.transactionSignature || 'N/A'}"`);
                     
                     if (duplicateRowIndices.length > 1) {
