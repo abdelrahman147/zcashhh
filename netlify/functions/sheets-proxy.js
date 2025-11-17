@@ -467,32 +467,10 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                     
                     console.log(`[Payment Storage] ✅✅✅ CONFIRMED: Will update row ${existingRowIndex} with status: ${payment.status}, signature: ${payment.transactionSignature || 'N/A'}`);
                 } else {
-                    console.log(`[Payment Storage] ⚠️ Payment ${payment.id} not found in sheet by Payment ID`);
-                    console.log(`[Payment Storage]    Tried matching by: Payment ID "${paymentIdToFind}", Order ID "${payment.orderId || 'N/A'}"`);
-                    
-                    // LAST RESORT: Try to find by Order ID only (read full rows to check Order ID column)
-                    if (payment.orderId) {
-                        console.log(`[Payment Storage] 🔍 LAST RESORT: Searching all rows by Order ID "${payment.orderId}"...`);
-                        const fullReadUrl = `https://sheets.googleapis.com/v4/spreadsheets/${actualSheetId}/values/${sheetName}!A2:F`;
-                        const fullReadResponse = await fetch(fullReadUrl, {
-                            headers: { 'Authorization': `Bearer ${accessToken}` }
-                        });
-                        if (fullReadResponse.ok) {
-                            const fullReadData = await fullReadResponse.json();
-                            const fullRows = fullReadData.values || [];
-                            for (let i = 0; i < fullRows.length; i++) {
-                                const rowOrderId = fullRows[i] && fullRows[i][5] ? String(fullRows[i][5]).trim() : '';
-                                if (rowOrderId === String(payment.orderId).trim()) {
-                                    existingRowIndex = i + 2;
-                                    console.log(`[Payment Storage] ✅✅✅ FOUND BY ORDER ID! Row ${existingRowIndex} has Order ID "${rowOrderId}"`);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    
                     if (!existingRowIndex) {
-                        console.log(`[Payment Storage] Payment ${payment.id} not found in sheet, will append new row`);
+                        console.log(`[Payment Storage] ⚠️ Payment not found in sheet`);
+                        console.log(`[Payment Storage]    Tried: Order ID "${orderIdToFind || 'N/A'}", Payment ID "${paymentIdToFind}"`);
+                        console.log(`[Payment Storage]    Will append as new row`);
                     }
                 }
             } else {

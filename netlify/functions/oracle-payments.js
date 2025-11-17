@@ -1,10 +1,10 @@
 const fetch = require('node-fetch');
 
-// In-memory storage (in production, use a database)
-const payments = new Map();
+// SIMPLIFIED: No in-memory cache - Google Sheets is single source of truth
+// This eliminates sync issues and makes the system more reliable
 
-// Load payment from Google Sheets if not found in memory
-async function loadPaymentFromSheets(paymentId) {
+// Load payment from Google Sheets (single source of truth)
+async function loadPaymentFromSheets(paymentId, orderId = null) {
     try {
         // Default sheet ID (can be overridden with query param)
         const sheetId = '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8';
@@ -21,8 +21,17 @@ async function loadPaymentFromSheets(paymentId) {
         const data = await response.json();
         const allPayments = data.payments || [];
         
-        // Find the payment by ID
-        const payment = allPayments.find(p => p.id === paymentId);
+        // SIMPLIFIED: Find by Order ID first (most reliable), then Payment ID
+        let payment = null;
+        if (orderId) {
+            payment = allPayments.find(p => p.orderId === orderId);
+            if (payment) {
+                console.log(`✅ Found payment by Order ID: ${orderId}`);
+            }
+        }
+        if (!payment) {
+            payment = allPayments.find(p => p.id === paymentId);
+        }
         
         if (payment) {
             // If payment has transaction signature but status is pending, derive status from blockchain
@@ -58,8 +67,7 @@ async function loadPaymentFromSheets(paymentId) {
                 }
             }
             
-            // Store in memory for future requests
-            payments.set(paymentId, payment);
+            // SIMPLIFIED: Don't cache in memory - always read from sheets (single source of truth)
             return payment;
         }
         
@@ -85,10 +93,31 @@ exports.handler = async (event, context) => {
     }
     
     try {
-        if (event.httpMethod === 'POST') {
-            // Create payment
+        if (event.httpMethod === 'POST' && !event.path.includes('/verify')) {
+            // Create payment - SIMPLIFIED: Save directly to Google Sheets, no in-memory cache
             const payment = JSON.parse(event.body);
-            payments.set(payment.id, payment);
+            
+            // Save to Google Sheets immediately (single source of truth)
+            const baseUrl = process.env.URL || 'https://zecit.online';
+            const sheetsProxyUrl = `${baseUrl}/api/sheets/payment`;
+            try {
+                const saveResponse = await fetch(sheetsProxyUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        payment: payment,
+                        sheetId: process.env.GOOGLE_SHEET_ID || '1apjUM4vb-6TUx4cweIThML5TIKBg8E7HjLlaZyiw1e8',
+                        sheetName: 'payment'
+                    })
+                });
+                
+                if (!saveResponse.ok) {
+                    console.error(`Failed to save payment to sheets: ${saveResponse.status}`);
+                }
+            } catch (err) {
+                console.error('Error saving to sheets:', err);
+            }
+            
             return {
                 statusCode: 200,
                 headers: {
@@ -133,12 +162,8 @@ exports.handler = async (event, context) => {
             
             if (paymentId && paymentId !== 'payments' && paymentId !== 'oracle') {
                 // Get single payment
-                let payment = payments.get(paymentId);
-                
-                // If not found in memory, try loading from Google Sheets
-                if (!payment) {
-                    payment = await loadPaymentFromSheets(paymentId);
-                }
+                // SIMPLIFIED: Always load from Google Sheets (single source of truth)
+                let payment = await loadPaymentFromSheets(paymentId);
                 
                 if (!payment) {
                     return {
@@ -182,8 +207,7 @@ exports.handler = async (event, context) => {
                                 payment.blockTime = verifyData.result.blockTime;
                                 payment.slot = verifyData.result.slot;
                                 
-                                // Update in memory IMMEDIATELY
-                                payments.set(paymentId, payment);
+                                // SIMPLIFIED: No in-memory cache - Google Sheets is source of truth
                                 
                                 // Also update Google Sheets in background (don't wait)
                                 const baseUrl = process.env.URL || 'https://zecit.online';
