@@ -316,6 +316,28 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                 // Column mapping: A=ID, B=Amount, C=Currency, D=Token, E=TokenAmount, F=OrderID, G=MerchantAddress, H=Status, I=TransactionSignature, J=CreatedAt, K=ConfirmedAt, L=ZKProof
                 // CRITICAL: Use the FULL payment ID, not truncated, when updating
                 const fullPaymentId = String(payment.id || '').trim();
+                
+                // Export public ZK proof (without private witness data)
+                let publicProof = {};
+                if (payment.proof) {
+                    if (payment.proof._witness) {
+                        // Remove private witness data before saving
+                        publicProof = {
+                            id: payment.proof.id,
+                            commitment: payment.proof.commitment,
+                            challenge: payment.proof.challenge,
+                            response: payment.proof.response,
+                            signature: payment.proof.signature,
+                            expectedAmount: payment.proof.expectedAmount,
+                            timestamp: payment.proof.timestamp,
+                            verified: payment.proof.verified
+                        };
+                    } else {
+                        // Already public proof, use as-is
+                        publicProof = payment.proof;
+                    }
+                }
+                
                 const values = [
                     fullPaymentId, // Use full ID - Google Sheets may truncate display but we store full value
                     String(payment.amount || 0),
@@ -328,7 +350,7 @@ async function handlePaymentStorage(event, accessToken, serviceAccount) {
                     String(payment.transactionSignature || '').trim(), // Transaction signature
                     payment.createdAt ? new Date(payment.createdAt).toISOString() : new Date().toISOString(),
                     payment.confirmedAt ? new Date(payment.confirmedAt).toISOString() : '',
-                    JSON.stringify(payment.proof || {})
+                    JSON.stringify(publicProof)
                 ];
                 
                 console.log(`[Payment Storage] Preparing values array for payment ${fullPaymentId}`);
