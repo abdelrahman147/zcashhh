@@ -185,7 +185,7 @@
                             <div class="checkout-form-group">
                                 <label>Expected Amount (SOL)</label>
                                 <input type="number" id="verify-amount" step="0.00000001" placeholder="0.00000000">
-                            </div>
+                        </div>
                             <button class="btn-primary" id="zk-verify-btn">Generate & Verify ZK Proof</button>
                             <div id="zk-verification-result" style="margin-top: 1rem;"></div>
                         </div>
@@ -200,7 +200,7 @@
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <input type="text" id="sol-address" placeholder="Paste your Solana wallet address here" style="flex: 1;">
                                     <button type="button" class="btn-secondary" onclick="pasteAddress()" style="white-space: nowrap;">Paste</button>
-                                </div>
+            </div>
                                 <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">Your Solana wallet address for receiving payments. You can paste it from your clipboard.</small>
                             </div>
                             <div class="checkout-form-group">
@@ -247,7 +247,7 @@
                     <div class="feature-icon">[CART]</div>
                     <h3 class="feature-title">Shopping Cart Integration</h3>
                     <p class="feature-description">Seamless integration with Shopify, WooCommerce, Magento, and custom ecommerce platforms.</p>
-                        </div>
+                    </div>
                 <div class="feature-card">
                     <div class="feature-icon">[FAST]</div>
                     <h3 class="feature-title">Instant Payments</h3>
@@ -257,7 +257,7 @@
                     <div class="feature-icon">[LOCK]</div>
                     <h3 class="feature-title">Secure & Private</h3>
                     <p class="feature-description">End-to-end encryption, non-custodial wallets, and privacy-first architecture.</p>
-                </div>
+                    </div>
                 <div class="feature-card">
                     <div class="feature-icon">[NET]</div>
                     <h3 class="feature-title">Cross-Chain Payments</h3>
@@ -271,7 +271,7 @@
             </div>
         </div>
     </section>
-    
+
     
     <!-- Removed quickstart section - focusing on core features -->
             <div class="quickstart-content">
@@ -282,11 +282,11 @@
                     <pre><code>npm install cryptocommerce-sdk
 # or
 yarn add cryptocommerce-sdk</code></pre>
-                </div>
+            </div>
                 <div class="code-block">
-                            <div class="code-header">
+                        <div class="code-header">
                         <span>Basic Integration</span>
-                    </div>
+                        </div>
                     <pre><code>import { CryptoCommerce } from 'cryptocommerce-sdk';
 
 const sdk = new CryptoCommerce({
@@ -349,138 +349,6 @@ sdk.on('payment.confirmed', (event) => {
                 <div class="api-endpoint">
                     <h3 class="api-method">getSupportedCurrencies()</h3>
                     <p class="api-description">Get list of supported cryptocurrencies and fiat currencies.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    
-    <!-- Payment Dashboard Section - Moved to top -->
-    <section id="dashboard" class="section">
-        <div class="container">
-            <h2 class="section-title">Payment Dashboard</h2>
-            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
-                Manage SOL payments and verify transactions using zero-knowledge proofs
-            </p>
-            <div class="merchant-tabs">
-                <button class="merchant-tab active" data-tab="overview">Overview</button>
-                <button class="merchant-tab" data-tab="payments">Payments</button>
-                <button class="merchant-tab" data-tab="verification">ZK Verification</button>
-                <button class="merchant-tab" data-tab="webhooks">Webhooks</button>
-                <button class="merchant-tab" data-tab="settings">Settings</button>
-            </div>
-            <div class="merchant-content">
-                <div id="merchant-overview" class="merchant-tab-content active">
-                    <div class="merchant-stats-grid">
-                        <div class="merchant-stat-card">
-                            <div class="stat-label">All-Time Volume</div>
-                            <div class="stat-value" id="stat-volume">$0.00</div>
-                            <div class="stat-desc">From verified payments only</div>
-                        </div>
-                        <div class="merchant-stat-card">
-                            <div class="stat-label">Total Getbacks</div>
-                            <div class="stat-value" id="stat-getbacks">$0.00</div>
-                            <div class="stat-desc">100 per verified transaction</div>
-                        </div>
-                        <div class="merchant-stat-card">
-                            <div class="stat-label">Verified Payments</div>
-                            <div class="stat-value" id="stat-payments">0</div>
-                        </div>
-                        <div class="merchant-stat-card">
-                            <div class="stat-label">ZK Proofs Generated</div>
-                            <div class="stat-value" id="stat-proofs">0</div>
-                        </div>
-                        <div class="merchant-stat-card">
-                            <div class="stat-label">Pending Verification</div>
-                            <div class="stat-value" id="stat-pending">0</div>
-                        </div>
-                    </div>
-                    <div class="merchant-actions">
-                        <button class="btn-primary" id="create-payment-btn">Create Payment Request</button>
-                        <button class="btn-secondary" id="view-payments-btn">View All Payments</button>
-                    </div>
-                </div>
-                <div id="merchant-payments" class="merchant-tab-content">
-                    <div class="merchant-header">
-                        <h3>Payment Management</h3>
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <select id="payment-filter" class="sort-select">
-                                <option value="all">All Payments</option>
-                                <option value="pending">Pending</option>
-                                <option value="verified">Verified</option>
-                                <option value="confirmed">Confirmed</option>
-                            </select>
-                            <button id="check-payments-btn" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-                                Check Now
-                            </button>
-            </div>
-        </div>
-                    <div id="merchant-payments-list"></div>
-                </div>
-                <div id="merchant-verification" class="merchant-tab-content">
-                    <h3>Zero-Knowledge Verification</h3>
-                    <div id="merchant-verification-content">
-                        <div class="zk-info">
-                            <h4>How ZK Verification Works</h4>
-                            <ol>
-                                <li>Payment is made to a Solana wallet address</li>
-                                <li>ZK proof is generated proving payment amount without revealing details</li>
-                                <li>Oracle verifies the proof and confirms payment</li>
-                                <li>Merchant receives confirmation without seeing transaction details</li>
-                            </ol>
-                        </div>
-                        <div class="verification-form" style="margin-top: 2rem;">
-                            <h4>Verify Payment</h4>
-                            <div class="checkout-form-group">
-                                <label>Transaction Signature</label>
-                                <input type="text" id="tx-hash-input" placeholder="Solana transaction signature">
-                            </div>
-                            <div class="checkout-form-group">
-                                <label>Expected Amount (SOL)</label>
-                                <input type="number" id="verify-amount" step="0.00000001" placeholder="0.00000000">
-            </div>
-                            <button class="btn-primary" id="zk-verify-btn">Generate & Verify ZK Proof</button>
-                            <div id="zk-verification-result" style="margin-top: 1rem;"></div>
-                        </div>
-                    </div>
-                </div>
-                <div id="merchant-settings" class="merchant-tab-content">
-                    <h3>Oracle Settings</h3>
-                    <div id="merchant-settings-content">
-                        <div class="settings-form">
-                            <div class="checkout-form-group">
-                                <label>Solana Wallet Address</label>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <input type="text" id="sol-address" placeholder="Paste your Solana wallet address here" style="flex: 1;">
-                                    <button type="button" class="btn-secondary" onclick="pasteAddress()" style="white-space: nowrap;">Paste</button>
-                                </div>
-                                <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">Your Solana wallet address for receiving payments. You can paste it from your clipboard.</small>
-                            </div>
-                            <div class="checkout-form-group">
-                                <label>Default Payment Token</label>
-                                <select id="default-token" class="checkout-form-group" style="width: 100%; padding: 0.75rem;">
-                                    <option value="SOL">SOL (Solana)</option>
-                                    <option value="USDC">USDC (USD Coin)</option>
-                                    <option value="USDT">USDT (Tether)</option>
-                                    <option value="EURC">EURC (Euro Coin)</option>
-                                </select>
-                                <small style="color: var(--text-secondary);">Default token for payments</small>
-                            </div>
-                            <div class="checkout-form-group">
-                                <label>Payment Confirmation Threshold</label>
-                                <input type="number" id="confirmation-threshold" value="1" min="1" max="10">
-                                <small style="color: var(--text-secondary);">Number of confirmations required</small>
-                            </div>
-                            <button class="btn-primary" onclick="saveOracleSettings()" style="margin-top: 1rem;">Save Settings</button>
-                        </div>
-                    </div>
-                </div>
-                <div id="merchant-webhooks" class="merchant-tab-content">
-                    <div class="merchant-header">
-                        <h3>Webhook Management</h3>
-                        <button class="btn-primary" id="add-webhook-btn">Add Webhook</button>
-                    </div>
-                    <div id="webhooks-list"></div>
                 </div>
             </div>
         </div>
