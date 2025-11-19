@@ -145,7 +145,7 @@ class PaymentStorage {
             const deletedCount = result.deletedCount || 0;
             
             if (deletedCount > 0) {
-                console.log(`🗑️ Deleted ${deletedCount} instance(s) of payment ${paymentId}`);
+                console.log(`[DEL] Deleted ${deletedCount} instance(s) of payment ${paymentId}`);
             } else {
                 console.log(`[INFO] Payment ${paymentId} not found in sheet (may have been deleted already)`);
             }
