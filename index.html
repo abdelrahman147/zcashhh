@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoCommerce SDK | Cryptocurrency Payment Integration for Ecommerce</title>
+    <title>ZK Paytell | Zero-Knowledge Payment Gateway & Game</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,24 +17,20 @@
             <span class="control minimize"></span>
             <span class="control maximize"></span>
         </div>
-        <div class="terminal-title">cryptocommerce-sdk@latest:~$</div>
+        <div class="terminal-title">zk-paytell@latest:~$</div>
     </div>
 
     
     <nav class="nav" id="nav">
         <div class="nav-container">
             <div class="nav-logo">
-                <span class="prompt">$</span> CryptoCommerce<span class="accent">SDK</span>
+                <span class="prompt">$</span> ZK<span class="accent">Paytell</span>
             </div>
             <div class="nav-links">
-                <a href="#features" class="nav-link">Features</a>
-                <a href="#quickstart" class="nav-link">Quick Start</a>
-                <a href="#oracle" class="nav-link">Oracle</a>
-                <a href="#merchant" class="nav-link">Dashboard</a>
-                <a href="#api" class="nav-link">API</a>
-                <a href="#examples" class="nav-link">Examples</a>
+                <a href="#payments" class="nav-link">Payments</a>
+                <a href="#zk" class="nav-link">ZK Proofs</a>
                 <a href="#game" class="nav-link">Game</a>
-                <a href="#docs" class="nav-link">Docs</a>
+                <a href="#dashboard" class="nav-link">Dashboard</a>
                 <button class="btn-primary" id="get-started-btn">Get Started</button>
             </div>
         </div>
@@ -52,10 +48,10 @@
                     </div>
                     <div class="terminal-body">
                         <div class="terminal-line">
-                            <span class="prompt">$</span> <span class="command">npm install cryptocommerce-sdk</span>
+                            <span class="prompt">$</span> <span class="command">zk-paytell init</span>
                         </div>
                         <div class="terminal-line">
-                            <span class="output">Installing CryptoCommerce SDK...</span>
+                            <span class="output">Initializing ZK Paytell...</span>
                         </div>
                         <div class="terminal-line">
                             <span class="output success">✓ Payment gateway initialized</span>
@@ -73,33 +69,32 @@
                 </div>
                 <div class="hero-text">
                     <h1 class="hero-title">
-                        <span class="code-tag">&lt;crypto&gt;</span><br>
-                        Cryptocurrency Payment SDK<br>
-                        for Ecommerce & Shopping
-                        <span class="code-tag">&lt;/crypto&gt;</span>
+                        <span class="code-tag">&lt;zk&gt;</span><br>
+                        ZK Paytell<br>
+                        Zero-Knowledge Payments & Gaming
+                        <span class="code-tag">&lt;/zk&gt;</span>
                     </h1>
                     <p class="hero-subtitle">
-                        Integrate cryptocurrency payments into your online store in minutes.<br>
-                        Support for Bitcoin, Ethereum, Solana, and 50+ cryptocurrencies. Secure, fast, and developer-friendly.
+                        Privacy-preserving Solana payments with advanced zero-knowledge proofs.<br>
+                        Secure, verifiable, and completely private. Play games, make payments, prove without revealing.
                     </p>
                     <div class="hero-actions">
                         <button class="btn-primary btn-large" id="connect-wallet-hero-btn">Connect Wallet</button>
-                        <button class="btn-primary btn-large" id="install-btn">Install SDK</button>
-                        <button class="btn-secondary btn-large" id="view-docs-btn">View Docs</button>
-                        <button class="btn-secondary btn-large" id="try-demo-btn">Try Demo</button>
+                        <button class="btn-primary btn-large" id="try-demo-btn">Try Payments</button>
+                        <button class="btn-secondary btn-large" id="view-docs-btn">Play Game</button>
                     </div>
                     <div class="hero-stats">
                         <div class="stat">
-                            <div class="stat-value">50+</div>
-                            <div class="stat-label">Cryptocurrencies</div>
+                            <div class="stat-value">ZK</div>
+                            <div class="stat-label">Zero-Knowledge</div>
                         </div>
                         <div class="stat">
-                            <div class="stat-value">1000+</div>
-                            <div class="stat-label">Merchants</div>
+                            <div class="stat-value">SOL</div>
+                            <div class="stat-label">Solana Payments</div>
                         </div>
                         <div class="stat">
-                            <div class="stat-value">&lt;5min</div>
-                            <div class="stat-label">Integration Time</div>
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Private</div>
                         </div>
                     </div>
                 </div>
@@ -147,9 +142,7 @@
     </section>
     
     
-    <section id="quickstart" class="section section-dark">
-        <div class="container">
-            <h2 class="section-title">Get Started in 5 Minutes</h2>
+    <!-- Removed quickstart section - focusing on core features -->
             <div class="quickstart-content">
                 <div class="code-block">
                             <div class="code-header">
@@ -197,9 +190,7 @@ sdk.on('payment.confirmed', (event) => {
     </section>
 
     
-    <section id="api" class="section">
-        <div class="container">
-            <h2 class="section-title">API Reference</h2>
+    <!-- Removed API section - focusing on core features -->
             <div class="api-docs">
                 <div class="api-endpoint">
                     <h3 class="api-method">createPayment()</h3>
@@ -414,9 +405,7 @@ sdk.on('payment.confirmed', (event) => {
         </div>
     </section>
 
-    <section id="examples" class="section section-dark">
-        <div class="container">
-            <h2 class="section-title">Integration Examples</h2>
+    <!-- Removed examples section - focusing on core features -->
             <div class="examples-grid">
                 <div class="example-card">
                     <h3 class="example-title">React Ecommerce</h3>
@@ -484,9 +473,7 @@ app.post('/api/checkout', async (req, res) => {
     </section>
 
     
-    <section id="docs" class="section">
-        <div class="container">
-            <h2 class="section-title">Documentation</h2>
+    <!-- Removed docs section - focusing on core features -->
             <div class="docs-grid">
                 <div class="doc-card">
                     <h3>Getting Started</h3>
@@ -580,10 +567,10 @@ app.post('/api/checkout', async (req, res) => {
                 <div class="footer-section">
                         <h4>Resources</h4>
                     <ul>
-                        <li><a href="#docs">Documentation</a></li>
-                        <li><a href="#api">API Reference</a></li>
-                        <li><a href="#examples">Examples</a></li>
-                        <li><a href="#">GitHub</a></li>
+                        <li><a href="#payments">Payments</a></li>
+                        <li><a href="#zk">ZK Proofs</a></li>
+                        <li><a href="#game">Game</a></li>
+                        <li><a href="#dashboard">Dashboard</a></li>
                     </ul>
                     </div>
                 <div class="footer-section">
@@ -596,7 +583,7 @@ app.post('/api/checkout', async (req, res) => {
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 CryptoCommerce SDK. All rights reserved.</p>
+                <p>&copy; 2025 ZK Paytell. All rights reserved.</p>
             </div>
         </div>
     </footer>
