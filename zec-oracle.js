@@ -257,7 +257,7 @@ class SolanaPaymentOracle {
             
             // Ensure PaymentStorage is initialized before saving
             if (!this.paymentStorage) {
-                console.log('🔄 PaymentStorage not initialized, attempting to initialize...');
+                console.log('[INIT] PaymentStorage not initialized, attempting to initialize...');
                 const initialized = await this.initPaymentStorage();
                 if (!initialized) {
                     console.error('[ERR] Failed to initialize PaymentStorage. Payment will not be saved to Google Sheets.');
@@ -386,7 +386,7 @@ class SolanaPaymentOracle {
         // Expired pending payments will be deleted after 1 hour
         if (this.paymentStorage) {
             try {
-                console.log(`💾 Saving payment ${payment.id} to Google Sheets with status: ${payment.status}`);
+                console.log(`[SAVE] Saving payment ${payment.id} to Google Sheets with status: ${payment.status}`);
                 const result = await this.paymentStorage.savePayment(payment);
                 if (result && result.success) {
                     if (payment.status === 'verified') {
@@ -493,7 +493,7 @@ class SolanaPaymentOracle {
         
         const totalCleaned = expiredPayments.length + expiredFromSheets.length;
         if (totalCleaned > 0) {
-            console.log(`✅ Total cleaned up: ${totalCleaned} expired pending payments`);
+                    console.log(`[OK] Total cleaned up: ${totalCleaned} expired pending payments`);
         }
         
         // Also check for and delete duplicate payments automatically
@@ -525,7 +525,7 @@ class SolanaPaymentOracle {
             // Delete duplicates with same Payment ID
             for (const [paymentId, payments] of paymentsByPaymentId.entries()) {
                 if (payments.length > 1) {
-                    console.log(`🔍 Found ${payments.length} duplicate payments with Payment ID: ${paymentId}`);
+                    console.log(`[FIND] Found ${payments.length} duplicate payments with Payment ID: ${paymentId}`);
                     
                     // Sort: verified first, then by creation date (newest first)
                     payments.sort((a, b) => {
@@ -540,15 +540,15 @@ class SolanaPaymentOracle {
                     const toKeep = payments[0];
                     const toDelete = payments.slice(1); // All except the first one
                     
-                    console.log(`✅ Keeping 1 payment: ${toKeep.id} (status: ${toKeep.status})`);
-                    console.log(`🗑️ Deleting ${toDelete.length} duplicate(s): ${toDelete.map(p => p.id).join(', ')}`);
+                    console.log(`[OK] Keeping 1 payment: ${toKeep.id} (status: ${toKeep.status})`);
+                    console.log(`[DEL] Deleting ${toDelete.length} duplicate(s): ${toDelete.map(p => p.id).join(', ')}`);
                     
                     for (const duplicate of toDelete) {
                         try {
                             await this.paymentStorage.deleteExpiredPayment(duplicate.id);
                             this.payments.delete(duplicate.id);
                             duplicatesDeleted++;
-                            console.log(`   ✓ Deleted duplicate: ${duplicate.id}`);
+                            console.log(`   [DEL] Deleted duplicate: ${duplicate.id}`);
                         } catch (error) {
                             console.warn(`   ✗ Failed to delete duplicate ${duplicate.id}:`, error);
                         }
@@ -570,7 +570,7 @@ class SolanaPaymentOracle {
             // Find duplicates (same Order ID with multiple payments)
             for (const [orderId, payments] of paymentsByOrderId.entries()) {
                 if (payments.length > 1) {
-                    console.log(`🔍 Found ${payments.length} duplicate payments with Order ID: ${orderId}`);
+                    console.log(`[FIND] Found ${payments.length} duplicate payments with Order ID: ${orderId}`);
                     
                     // Sort: verified first, then by creation date (newest first)
                     payments.sort((a, b) => {
@@ -585,15 +585,15 @@ class SolanaPaymentOracle {
                     const toKeep = payments[0];
                     const toDelete = payments.slice(1); // All except the first one
                     
-                    console.log(`✅ Keeping 1 payment: ${toKeep.id} (status: ${toKeep.status}, Order ID: ${orderId})`);
-                    console.log(`🗑️ Deleting ${toDelete.length} duplicate(s): ${toDelete.map(p => p.id).join(', ')}`);
+                    console.log(`[OK] Keeping 1 payment: ${toKeep.id} (status: ${toKeep.status}, Order ID: ${orderId})`);
+                    console.log(`[DEL] Deleting ${toDelete.length} duplicate(s): ${toDelete.map(p => p.id).join(', ')}`);
                     
                     for (const duplicate of toDelete) {
                         try {
                             await this.paymentStorage.deleteExpiredPayment(duplicate.id);
                             this.payments.delete(duplicate.id);
                             duplicatesDeleted++;
-                            console.log(`   ✓ Deleted duplicate: ${duplicate.id}`);
+                            console.log(`   [DEL] Deleted duplicate: ${duplicate.id}`);
                         } catch (error) {
                             console.warn(`   ✗ Failed to delete duplicate ${duplicate.id}:`, error);
                         }
@@ -614,21 +614,21 @@ class SolanaPaymentOracle {
             
             for (const [txSig, payments] of paymentsByTxSig.entries()) {
                 if (payments.length > 1) {
-                    console.log(`🔍 Found ${payments.length} duplicate payments with same transaction signature: ${txSig.substring(0, 20)}...`);
+                    console.log(`[FIND] Found ${payments.length} duplicate payments with same transaction signature: ${txSig.substring(0, 20)}...`);
                     
                     // Keep ONLY the first one, delete ALL the rest
                     const toKeep = payments[0];
                     const toDelete = payments.slice(1); // All except the first one
                     
-                    console.log(`✅ Keeping 1 payment: ${toKeep.id} (TX: ${txSig.substring(0, 20)}...)`);
-                    console.log(`🗑️ Deleting ${toDelete.length} duplicate(s): ${toDelete.map(p => p.id).join(', ')}`);
+                    console.log(`[OK] Keeping 1 payment: ${toKeep.id} (TX: ${txSig.substring(0, 20)}...)`);
+                    console.log(`[DEL] Deleting ${toDelete.length} duplicate(s): ${toDelete.map(p => p.id).join(', ')}`);
                     
                     for (const duplicate of toDelete) {
                         try {
                             await this.paymentStorage.deleteExpiredPayment(duplicate.id);
                             this.payments.delete(duplicate.id);
                             duplicatesDeleted++;
-                            console.log(`   ✓ Deleted duplicate: ${duplicate.id}`);
+                            console.log(`   [DEL] Deleted duplicate: ${duplicate.id}`);
                         } catch (error) {
                             console.warn(`   ✗ Failed to delete duplicate ${duplicate.id}:`, error);
                         }
@@ -637,7 +637,7 @@ class SolanaPaymentOracle {
             }
             
             if (duplicatesDeleted > 0) {
-                console.log(`✅ Automatically deleted ${duplicatesDeleted} duplicate payment(s)`);
+                console.log(`[OK] Automatically deleted ${duplicatesDeleted} duplicate payment(s)`);
             }
         } catch (error) {
             console.warn('Failed to check for duplicate payments:', error);
@@ -646,9 +646,9 @@ class SolanaPaymentOracle {
     
     // Manual cleanup function - can be called to clean up all expired payments immediately
     async cleanupAllExpiredPayments() {
-        console.log('🧹 Starting manual cleanup of all expired pending payments...');
+        console.log('[CLEAN] Starting manual cleanup of all expired pending payments...');
         await this.cleanupExpiredPayments();
-        console.log('✅ Manual cleanup complete');
+        console.log('[OK] Manual cleanup complete');
     }
     
     // Monitor payment
@@ -741,7 +741,7 @@ class SolanaPaymentOracle {
             return; // Already monitoring
         }
         
-        console.log('🔍 Starting aggressive blockchain monitoring (checks every 30 seconds)...');
+        console.log('[MONITOR] Starting aggressive blockchain monitoring (checks every 30 seconds)...');
         
         // Check immediately when starting
         this.checkPendingPayments();
@@ -777,14 +777,14 @@ class SolanaPaymentOracle {
         try {
             // Get recent transactions for merchant address using Alchemy RPC
             const publicKey = new window.SolanaWeb3.PublicKey(this.merchantAddress);
-            console.log(`🔍 Using Alchemy RPC to check transactions for address: ${this.merchantAddress}`);
-            console.log(`🔍 RPC URL: ${this.solanaConnection._rpcEndpoint || 'N/A'}`);
+            console.log(`[CHECK] Using Alchemy RPC to check transactions for address: ${this.merchantAddress}`);
+            console.log(`[CHECK] RPC URL: ${this.solanaConnection._rpcEndpoint || 'N/A'}`);
             
             const signatures = await this.solanaConnection.getSignaturesForAddress(publicKey, {
                 limit: 100 // Check last 100 transactions for better coverage
             });
             
-            console.log(`🔍 Checking ${pendingPayments.length} pending payment(s) against ${signatures.length} recent transaction(s) from Alchemy RPC...`);
+            console.log(`[CHECK] Checking ${pendingPayments.length} pending payment(s) against ${signatures.length} recent transaction(s) from Alchemy RPC...`);
             
             // Check each pending payment
             for (const payment of pendingPayments) {
@@ -800,14 +800,14 @@ class SolanaPaymentOracle {
                         // If proof is verified, update status regardless of current status
                         if (verification.verified) {
                             if (payment.status !== 'verified') {
-                                console.log(`🔄 Updating payment ${payment.id} from ${payment.status} to verified (proof verified)`);
+                                console.log(`[UPDATE] Updating payment ${payment.id} from ${payment.status} to verified (proof verified)`);
                                 payment.status = 'verified';
                                 payment.proof = verification.proof;
                                 payment.confirmedAt = Date.now();
                                 this.payments.set(payment.id, payment);
                                 await this.savePaymentToBackend(payment);
                                 await this.triggerWebhook(payment);
-                                console.log(`✅ Payment ${payment.id} automatically verified!`);
+                                console.log(`[OK] Payment ${payment.id} automatically verified!`);
                                 
                                 // Trigger UI update immediately
                                 this.triggerUIUpdate();
@@ -827,7 +827,7 @@ class SolanaPaymentOracle {
                 
                 // Also check if payment has a verified proof but status is still pending
                 if (payment.proof && payment.proof.verified && payment.status !== 'verified') {
-                    console.log(`🔄 Payment ${payment.id} has verified proof but status is ${payment.status}, updating to verified`);
+                    console.log(`[UPDATE] Payment ${payment.id} has verified proof but status is ${payment.status}, updating to verified`);
                     payment.status = 'verified';
                     payment.confirmedAt = payment.confirmedAt || Date.now();
                     this.payments.set(payment.id, payment);
@@ -853,7 +853,7 @@ class SolanaPaymentOracle {
                         const amount = this.extractTransactionAmount(tx, publicKey, payment.token || 'SOL');
                         const timeDiff = Math.abs(tx.blockTime * 1000 - payment.createdAt);
                         
-                        console.log(`🔍 Checking transaction ${sigInfo.signature.substring(0, 20)}...`);
+                        console.log(`[CHECK] Checking transaction ${sigInfo.signature.substring(0, 20)}...`);
                         console.log(`   Payment: ${payment.id}, Expected: ${payment.solAmount} ${payment.token || 'SOL'}, Found: ${amount} ${payment.token || 'SOL'}`);
                         console.log(`   Time diff: ${Math.round(timeDiff / 1000)}s, Payment created: ${new Date(payment.createdAt).toLocaleString()}`);
                         
@@ -872,7 +872,7 @@ class SolanaPaymentOracle {
                             amountMatches) {
                             
                             // Found matching transaction!
-                            console.log(`✅ MATCH FOUND! Payment ${payment.id} matches transaction ${sigInfo.signature}`);
+                            console.log(`[MATCH] Payment ${payment.id} matches transaction ${sigInfo.signature}`);
                             payment.status = 'verified';
                             payment.transactionSignature = sigInfo.signature;
                             payment.confirmedAt = Date.now();
@@ -886,11 +886,11 @@ class SolanaPaymentOracle {
                             
                             this.payments.set(payment.id, payment);
                             
-                            console.log(`💾 Saving verified payment ${payment.id} with signature ${sigInfo.signature} to Google Sheets...`);
+                            console.log(`[SAVE] Saving verified payment ${payment.id} with signature ${sigInfo.signature} to Google Sheets...`);
                             await this.savePaymentToBackend(payment);
                             await this.triggerWebhook(payment);
                             
-                            console.log(`✅ Payment ${payment.id} automatically verified via Alchemy RPC transaction ${sigInfo.signature}`);
+                            console.log(`[OK] Payment ${payment.id} automatically verified via Alchemy RPC transaction ${sigInfo.signature}`);
                             
                             // Trigger UI update immediately
                             this.triggerUIUpdate();
@@ -997,7 +997,7 @@ class SolanaPaymentOracle {
                         const change = postAmount - preAmount;
                         
                         if (change > 0) {
-                            console.log(`✅ Found ${token} transfer: ${change} (pre: ${preAmount}, post: ${postAmount})`);
+                            console.log(`[OK] Found ${token} transfer: ${change} (pre: ${preAmount}, post: ${postAmount})`);
                             return change;
                         }
                     }
@@ -1055,7 +1055,7 @@ class SolanaPaymentOracle {
     
     // Direct blockchain check for a specific payment
     async checkPaymentOnBlockchain(paymentId) {
-        console.log(`🔍 Direct blockchain check for payment: ${paymentId}`);
+        console.log(`[CHECK] Direct blockchain check for payment: ${paymentId}`);
         const payment = this.payments.get(paymentId);
         if (!payment) {
             console.warn(`Payment ${paymentId} not found in memory`);
@@ -1071,13 +1071,13 @@ class SolanaPaymentOracle {
             const publicKey = new window.SolanaWeb3.PublicKey(this.merchantAddress);
             
             // Get recent transactions (last 100)
-            console.log(`🔍 Fetching last 100 transactions for ${this.merchantAddress}...`);
+            console.log(`[FETCH] Fetching last 100 transactions for ${this.merchantAddress}...`);
             const signatures = await this.solanaConnection.getSignaturesForAddress(publicKey, {
                 limit: 100,
                 before: null
             });
             
-            console.log(`🔍 Found ${signatures.length} recent transactions, checking for payment match...`);
+            console.log(`[FIND] Found ${signatures.length} recent transactions, checking for payment match...`);
             
             // Check each transaction
             for (const sigInfo of signatures) {
@@ -1102,7 +1102,7 @@ class SolanaPaymentOracle {
                                        (tx.blockTime * 1000 >= payment.createdAt - (5 * 60 * 1000));
                     
                     if (amount > 0 && amountMatches && timeMatches) {
-                        console.log(`✅ BLOCKCHAIN MATCH FOUND! Transaction ${sigInfo.signature} matches payment ${paymentId}`);
+                        console.log(`[MATCH] BLOCKCHAIN MATCH FOUND! Transaction ${sigInfo.signature} matches payment ${paymentId}`);
                         
                         // Verify transaction
                         const verification = await this.verifySolanaTransaction(sigInfo.signature, payment.solAmount);
@@ -1118,7 +1118,7 @@ class SolanaPaymentOracle {
                         await this.triggerWebhook(payment);
                         this.triggerUIUpdate();
                         
-                        console.log(`✅ Payment ${paymentId} verified on blockchain!`);
+                        console.log(`[OK] Payment ${paymentId} verified on blockchain!`);
                         return { success: true, payment, signature: sigInfo.signature };
                     }
                 } catch (txError) {
@@ -1137,7 +1137,7 @@ class SolanaPaymentOracle {
     
     // Manual check function for immediate verification
     async manualCheckPayment(paymentId) {
-        console.log(`🔍 Manual check requested for payment: ${paymentId}`);
+        console.log(`[CHECK] Manual check requested for payment: ${paymentId}`);
         const payment = this.payments.get(paymentId);
         if (!payment) {
             console.warn(`Payment ${paymentId} not found in memory`);

@@ -17,7 +17,7 @@ class PaymentStorage {
         this.sheetId = localStorage.getItem('payment_sheet_id') || defaultSheetId;
         this.paymentSheetName = 'payment'; // Sheet name for payments (must match tab name)
         
-        console.log('✅ Payment Storage initialized');
+        console.log('[OK] Payment Storage initialized');
         console.log(`   API Base: ${this.apiBase}`);
         if (this.sheetId) {
             console.log(`   Sheet ID: ${this.sheetId}`);
@@ -55,14 +55,14 @@ class PaymentStorage {
             }
 
             const result = await response.json();
-            console.log(`✅ Payment ${payment.id} saved to Google Sheets`);
+            console.log(`[OK] Payment ${payment.id} saved to Google Sheets`);
             
             // Update sheet ID if a new one was created
             if (result.sheetId) {
                 this.sheetId = result.sheetId;
                 localStorage.setItem('payment_sheet_id', result.sheetId);
                 const sheetUrl = result.sheetUrl || `https://docs.google.com/spreadsheets/d/${result.sheetId}/edit`;
-                console.log(`\n📊 ========== PAYMENT SHEET CREATED ==========`);
+                console.log(`\n[INFO] ========== PAYMENT SHEET CREATED ==========`);
                 console.log(`🔗 ${sheetUrl}`);
                 console.log(`📋 Sheet ID: ${result.sheetId}`);
                 console.log(`==========================================\n`);
@@ -96,7 +96,7 @@ class PaymentStorage {
 
             const data = await response.json();
             const payments = data.payments || [];
-            console.log(`📥 Loaded ${payments.length} verified payments from Google Sheets`);
+            console.log(`[LOAD] Loaded ${payments.length} verified payments from Google Sheets`);
             return payments;
         } catch (error) {
             console.error('❌ Failed to load payments:', error);
@@ -218,7 +218,7 @@ if (typeof window !== 'undefined') {
             const deletedCount = result.deletedCount || 0;
             
             if (deletedCount > 0) {
-                console.log(`✅ Deleted ${deletedCount} payment(s) with Order ID ${orderId}`);
+                console.log(`[OK] Deleted ${deletedCount} payment(s) with Order ID ${orderId}`);
             } else {
                 console.log(`ℹ️ No payments found with Order ID ${orderId}`);
             }
@@ -261,7 +261,7 @@ if (typeof window !== 'undefined') {
         
         if (result.success) {
             const deletedCount = result.deletedCount || 1;
-            console.log(`✅ Deleted ${deletedCount} instance(s) of payment ${paymentId} in one operation`);
+            console.log(`[OK] Deleted ${deletedCount} instance(s) of payment ${paymentId} in one operation`);
             return { deleted: deletedCount, attempts: 1 };
         } else {
             console.log(`ℹ️ No instances found or deletion failed: ${result.error || 'Unknown error'}`);
@@ -280,7 +280,7 @@ if (typeof window !== 'undefined') {
             const link = window.oracle.paymentStorage.getSheetLink();
             const sheetId = window.oracle.paymentStorage.getSheetId();
             if (link) {
-                console.log(`\n📊 ========== PAYMENT DATABASE LINK ==========`);
+                console.log(`\n[INFO] ========== PAYMENT DATABASE LINK ==========`);
                 console.log(`🔗 ${link}`);
                 console.log(`📋 Sheet ID: ${sheetId}`);
                 console.log(`==========================================\n`);
