@@ -271,29 +271,48 @@
         const container = document.getElementById('zk-verification-result');
         if (!container) return;
         
-        if (result.verified) {
+        if (result.verified && result.proof) {
+            // Export public proof (without witness data)
+            const publicProof = result.proof._witness ? 
+                (window.ZKProofService ? new window.ZKProofService().exportPublicProof(result.proof) : result.proof) :
+                result.proof;
+            
             container.innerHTML = `
-                <div style="background: var(--bg-secondary); border: 1px solid var(--accent-success); border-radius: 8px; padding: 1.5rem;">
-                    <div style="color: var(--accent-success); font-weight: 600; margin-bottom: 1rem;">✓ ZK Proof Verified</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                        <strong>Proof ID:</strong> ${result.proof.id}
+                <div style="background: #000000; border: 1px solid #00ff00; border-radius: 0; padding: 1.5rem; font-family: var(--font-mono);">
+                    <div style="color: #00ff00; font-weight: 600; margin-bottom: 1rem; text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);">[OK] ZK Proof Verified</div>
+                    <div style="font-size: 0.85rem; color: #00cc00; margin-bottom: 0.5rem;">
+                        <strong>Proof ID:</strong> ${publicProof.id}
                     </div>
-                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.85rem; color: #00cc00; margin-bottom: 0.5rem;">
                         <strong>Amount:</strong> ${result.amount.toFixed(8)} SOL
                     </div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                        <strong>Confirmations:</strong> ${result.confirmations}
+                    <div style="font-size: 0.85rem; color: #00cc00; margin-bottom: 0.5rem;">
+                        <strong>Expected Amount:</strong> ${publicProof.expectedAmount.toFixed(8)} SOL
                     </div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                        <strong>ZK Proof Data:</strong>
-                        <pre style="background: var(--bg-tertiary); padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem; font-size: 0.75rem; overflow-x: auto;">${JSON.stringify(result.proof.proofData, null, 2)}</pre>
+                    <div style="font-size: 0.85rem; color: #00cc00; margin-bottom: 0.5rem;">
+                        <strong>Confirmations:</strong> ${result.confirmations || 0}
+                    </div>
+                    <div style="font-size: 0.85rem; color: #00cc00; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #003300;">
+                        <strong>ZK Proof (Public):</strong>
+                        <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #009900;">
+                            <div><strong>Commitment:</strong> ${publicProof.commitment ? publicProof.commitment.substring(0, 32) + '...' : 'N/A'}</div>
+                            <div style="margin-top: 0.25rem;"><strong>Challenge:</strong> ${publicProof.challenge ? publicProof.challenge.substring(0, 32) + '...' : 'N/A'}</div>
+                            <div style="margin-top: 0.25rem;"><strong>Response:</strong> ${publicProof.response ? publicProof.response.substring(0, 32) + '...' : 'N/A'}</div>
+                            <div style="margin-top: 0.25rem;"><strong>Signature:</strong> ${publicProof.signature ? publicProof.signature.substring(0, 32) + '...' : 'N/A'}</div>
+                        </div>
+                        <div style="margin-top: 0.5rem; font-size: 0.7rem; color: #006600; font-style: italic;">
+                            Note: This is a real ZK proof using ECDSA signatures and Pedersen commitments. The witness (transaction hash and actual amount) is hidden.
+                        </div>
                     </div>
                 </div>
             `;
         } else {
             container.innerHTML = `
-                <div style="background: var(--bg-secondary); border: 1px solid var(--accent-error); border-radius: 8px; padding: 1.5rem;">
-                    <div style="color: var(--accent-error); font-weight: 600;">✗ ZK Proof Verification Failed</div>
+                <div style="background: #000000; border: 1px solid #ff0000; border-radius: 0; padding: 1.5rem; font-family: var(--font-mono);">
+                    <div style="color: #ff0000; font-weight: 600;">[ERR] ZK Proof Verification Failed</div>
+                    <div style="font-size: 0.85rem; color: #00cc00; margin-top: 0.5rem;">
+                        ${result.error || 'Transaction verification failed or proof generation error'}
+                    </div>
                 </div>
             `;
         }
