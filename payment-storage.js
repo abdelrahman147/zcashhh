@@ -63,14 +63,14 @@ class PaymentStorage {
                 localStorage.setItem('payment_sheet_id', result.sheetId);
                 const sheetUrl = result.sheetUrl || `https://docs.google.com/spreadsheets/d/${result.sheetId}/edit`;
                 console.log(`\n[INFO] ========== PAYMENT SHEET CREATED ==========`);
-                console.log(`🔗 ${sheetUrl}`);
-                console.log(`📋 Sheet ID: ${result.sheetId}`);
+                console.log(`[LINK] ${sheetUrl}`);
+                console.log(`[ID] Sheet ID: ${result.sheetId}`);
                 console.log(`==========================================\n`);
             }
             
             return { success: true, result };
         } catch (error) {
-            console.error(`❌ Failed to save payment ${payment.id}:`, error);
+            console.error(`[ERR] Failed to save payment ${payment.id}:`, error);
             return { success: false, error: error.message };
         }
     }
@@ -99,7 +99,7 @@ class PaymentStorage {
             console.log(`[LOAD] Loaded ${payments.length} verified payments from Google Sheets`);
             return payments;
         } catch (error) {
-            console.error('❌ Failed to load payments:', error);
+            console.error('[ERR] Failed to load payments:', error);
             return [];
         }
     }
@@ -147,12 +147,12 @@ class PaymentStorage {
             if (deletedCount > 0) {
                 console.log(`🗑️ Deleted ${deletedCount} instance(s) of payment ${paymentId}`);
             } else {
-                console.log(`ℹ️ Payment ${paymentId} not found in sheet (may have been deleted already)`);
+                console.log(`[INFO] Payment ${paymentId} not found in sheet (may have been deleted already)`);
             }
             
             return { success: true, deletedCount: deletedCount };
         } catch (error) {
-            console.error(`❌ Failed to delete payment ${paymentId}:`, error);
+            console.error(`[ERR] Failed to delete payment ${paymentId}:`, error);
             return { success: false, error: error.message };
         }
     }
@@ -171,7 +171,7 @@ if (typeof window !== 'undefined') {
         if (window.oracle && window.oracle.cleanupAllExpiredPayments) {
             await window.oracle.cleanupAllExpiredPayments();
         } else {
-            console.error('❌ Oracle not initialized. Make sure the page is fully loaded.');
+                console.error('[ERR] Oracle not initialized. Make sure the page is fully loaded.');
         }
     };
 }
@@ -191,7 +191,7 @@ if (typeof window !== 'undefined') {
                 console.log('⚠️ Creating temporary PaymentStorage instance...');
                 paymentStorage = new window.PaymentStorage();
             } else {
-                console.error('❌ PaymentStorage not available.');
+                console.error('[ERR] PaymentStorage not available.');
                 return { deleted: 0, error: 'PaymentStorage not available' };
             }
         }
@@ -220,12 +220,12 @@ if (typeof window !== 'undefined') {
             if (deletedCount > 0) {
                 console.log(`[OK] Deleted ${deletedCount} payment(s) with Order ID ${orderId}`);
             } else {
-                console.log(`ℹ️ No payments found with Order ID ${orderId}`);
+                console.log(`[INFO] No payments found with Order ID ${orderId}`);
             }
             
             return { deleted: deletedCount, success: true };
         } catch (error) {
-            console.error(`❌ Failed to delete payments by Order ID:`, error);
+            console.error(`[ERR] Failed to delete payments by Order ID:`, error);
             return { deleted: 0, success: false, error: error.message };
         }
     };
@@ -264,7 +264,7 @@ if (typeof window !== 'undefined') {
             console.log(`[OK] Deleted ${deletedCount} instance(s) of payment ${paymentId} in one operation`);
             return { deleted: deletedCount, attempts: 1 };
         } else {
-            console.log(`ℹ️ No instances found or deletion failed: ${result.error || 'Unknown error'}`);
+            console.log(`[INFO] No instances found or deletion failed: ${result.error || 'Unknown error'}`);
             return { deleted: 0, attempts: 1, error: result.error };
         }
     };
@@ -281,16 +281,16 @@ if (typeof window !== 'undefined') {
             const sheetId = window.oracle.paymentStorage.getSheetId();
             if (link) {
                 console.log(`\n[INFO] ========== PAYMENT DATABASE LINK ==========`);
-                console.log(`🔗 ${link}`);
-                console.log(`📋 Sheet ID: ${sheetId}`);
+                console.log(`[LINK] ${link}`);
+                console.log(`[ID] Sheet ID: ${sheetId}`);
                 console.log(`==========================================\n`);
                 return link;
             } else {
-                console.log('❌ Payment sheet not initialized yet');
+                console.log('[ERR] Payment sheet not initialized yet');
                 return null;
             }
         } else {
-            console.log('❌ Payment storage not available. Make sure you have created at least one payment.');
+            console.log('[ERR] Payment storage not available. Make sure you have created at least one payment.');
             return null;
         }
     };
