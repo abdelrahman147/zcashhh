@@ -11,6 +11,7 @@ class SolanaPaymentOracle {
         this.solanaConnection = null;
         this.paymentStorage = null;
         this.cleanupInterval = null;
+        this.backfillingProofs = false;
         this.initSolana();
         this.initPaymentStorage();
         this.initZKService();
@@ -358,6 +359,13 @@ class SolanaPaymentOracle {
                 const pendingCount = allPayments.filter(p => p.status === 'pending').length;
                 console.log(`[OK] Loaded ${allPayments.length} payments from Google Sheets (${verifiedCount} verified, ${pendingCount} pending)`);
                 
+                // Schedule a background proof backfill for verified payments missing proof data
+                setTimeout(() => {
+                    this.backfillMissingProofs().catch(err => {
+                        console.warn('[ZK] Proof backfill failed:', err);
+                    });
+                }, 2000);
+                
         // Clean up expired payments and duplicates immediately after loading
         // This ensures expired payments and duplicates are removed as soon as they're loaded
         setTimeout(async () => {
@@ -370,6 +378,86 @@ class SolanaPaymentOracle {
             } catch (error) {
                 console.error('Failed to load payments from storage:', error);
             }
+        }
+    }
+
+    hasValidProof(proof) {
+        if (!proof) {
+            return false;
+        }
+        if (typeof proof === 'string') {
+            try {
+                const parsed = JSON.parse(proof);
+                return this.hasValidProof(parsed);
+            } catch {
+                return false;
+            }
+        }
+        if (Array.isArray(proof)) {
+            return proof.length > 0;
+        }
+        const keys = Object.keys(proof);
+        if (keys.length === 0) {
+            return false;
+        }
+        return Boolean(proof.commitment || proof.nullifier || proof.signature || proof.id);
+    }
+
+    async backfillMissingProofs() {
+        if (this.backfillingProofs) {
+            return;
+        }
+        if (!this.payments || this.payments.size === 0) {
+            return;
+        }
+        if (!this.solanaConnection) {
+            console.warn('[ZK] Solana connection not ready, skipping proof backfill');
+            return;
+        }
+        if (!this.zkService) {
+            await this.initZKService();
+            if (!this.zkService) {
+                console.warn('[ZK] Proof service unavailable, skipping backfill');
+                return;
+            }
+        }
+        
+        const paymentsNeedingProof = Array.from(this.payments.values())
+            .filter(p => p && p.status === 'verified')
+            .filter(p => !this.hasValidProof(p.proof))
+            .filter(p => !!p.transactionSignature);
+        
+        if (paymentsNeedingProof.length === 0) {
+            return;
+        }
+        
+        this.backfillingProofs = true;
+        console.log(`[ZK] Backfilling proofs for ${paymentsNeedingProof.length} verified payment(s) missing proof data`);
+        
+        try {
+            for (const payment of paymentsNeedingProof) {
+                try {
+                    const expectedAmount = payment.solAmount || payment.amount || 0;
+                    const verification = await this.verifySolanaTransaction(payment.transactionSignature, expectedAmount);
+                    
+                    if (verification && verification.verified && verification.proof) {
+                        payment.proof = verification.proof;
+                        const blockTimeMs = (verification.transaction && verification.transaction.blockTime)
+                            ? verification.transaction.blockTime * 1000
+                            : null;
+                        payment.confirmedAt = payment.confirmedAt || blockTimeMs || Date.now();
+                        this.payments.set(payment.id, payment);
+                        await this.savePaymentToBackend(payment);
+                        console.log(`[ZK] ✅ Backfilled ZK proof for payment ${payment.id}`);
+                    } else {
+                        console.warn(`[ZK] Unable to backfill proof for payment ${payment.id} (verification failed)`);
+                    }
+                } catch (error) {
+                    console.warn(`[ZK] Failed to backfill proof for payment ${payment?.id || 'unknown'}:`, error);
+                }
+            }
+        } finally {
+            this.backfillingProofs = false;
         }
     }
     
