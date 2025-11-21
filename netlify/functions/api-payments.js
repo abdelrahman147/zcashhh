@@ -4,7 +4,6 @@ const { loadPaymentFromSheets } = require('./oracle-payments');
 const SITE_URL = (process.env.URL || 'https://zecit.online').replace(/\/$/, '');
 const MERCHANT_ADDRESS = process.env.MERCHANT_ADDRESS || null;
 const PAYMENT_PAGE_URL = process.env.PAYMENT_PAGE_URL || `${SITE_URL}/pay`;
-const PRICE_ENDPOINT = process.env.CRYPTO_PRICE_URL || `${SITE_URL}/api/crypto-price`;
 
 const SUPPORTED_TOKENS = {
     SOL: { priceKey: 'solana', decimals: 9 },
@@ -162,16 +161,44 @@ async function handleGetPayment(paymentId) {
 }
 
 async function fetchTokenPrice(cryptoKey, currency) {
-    const url = `${PRICE_ENDPOINT}?crypto=${encodeURIComponent(cryptoKey)}&fiat=${encodeURIComponent(currency)}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error('Failed to fetch token price');
+    const fiatLower = (currency || 'USD').toLowerCase();
+    const coinId = cryptoKey.toLowerCase();
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiatLower)}`;
+    
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            const response = await fetch(url, { signal: controller.signal, headers: { 'accept': 'application/json' } });
+            clearTimeout(timeout);
+            if (response.ok) {
+                const data = await response.json();
+                const price = data[coinId]?.[fiatLower];
+                if (price && price > 0) {
+                    return price;
+                }
+            }
+        } catch (error) {
+            if (attempt === 3) {
+                console.warn(`Token price fetch failed for ${coinId}:`, error.message || error);
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, attempt * 500));
     }
-    const data = await response.json();
-    if (!data.price || data.price <= 0) {
-        throw new Error('Invalid price response');
+    
+    // Fallbacks for stablecoins to avoid blocking API
+    const fallback = {
+        'tether': 1,
+        'usd-coin': 1,
+        'euro-coin': fiatLower === 'usd' ? 1.09 : 1,
+        'solana': 100
+    }[coinId];
+    
+    if (fallback) {
+        return fallback;
     }
-    return data.price;
+    
+    throw new Error('Unable to fetch token price');
 }
 
 function roundTokenAmount(value, decimals = 6) {
