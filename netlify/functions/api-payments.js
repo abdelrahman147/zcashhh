@@ -52,11 +52,6 @@ exports.handler = async (event) => {
 };
 
 async function handleCreatePayment(event) {
-    if (!MERCHANT_ADDRESS) {
-        console.error('MERCHANT_ADDRESS environment variable not set');
-        return jsonResponse(500, { error: 'Merchant address not configured' });
-    }
-    
     let payload;
     try {
         payload = JSON.parse(event.body || '{}');
@@ -75,6 +70,11 @@ async function handleCreatePayment(event) {
     
     if (!tokenInfo) {
         return jsonResponse(400, { error: `Unsupported token "${token}". Supported tokens: ${Object.keys(SUPPORTED_TOKENS).join(', ')}` });
+    }
+    
+    const merchantAddress = String(payload.merchantAddress || MERCHANT_ADDRESS || '').trim();
+    if (!merchantAddress) {
+        return jsonResponse(400, { error: 'merchantAddress required. Pass it in the request body or configure MERCHANT_ADDRESS.' });
     }
     
     const allowPartial = Boolean(payload.allowPartial);
@@ -96,7 +96,7 @@ async function handleCreatePayment(event) {
         token,
         solAmount: tokenAmount,
         orderId,
-        merchantAddress: MERCHANT_ADDRESS,
+        merchantAddress,
         status: 'pending',
         createdAt: now,
         expiresAt: now + 15 * 60 * 1000,
