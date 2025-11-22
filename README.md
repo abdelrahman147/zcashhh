@@ -266,17 +266,9 @@ function checkPayment($paymentId) {
 
 ---
 
-## Support
-
-- 📧 Email: support@zk-paylink.xyz
-- 🐛 Issues: [GitHub Issues](https://github.com/abdelrahman147/zk-paylink/issues)
-- 🌐 Website: [zk-paylink.xyz](https://zk-paylink.xyz)
-
----
-
 ## License
 
-MIT License - Free to use for personal and commercial projects.
+MIT License - See [LICENSE](LICENSE) file for details.
 
 ---
 
