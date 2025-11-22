@@ -1,0 +1,94 @@
+# Development files
+node_modules/
+.env
+.env.*
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Private keys and secrets
+temp-private-key.txt
+gen-lang-client-*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*-key.json
+service-account*.json
+credentials*.json
+
+# Build files
+dist/
+build/
+.cache/
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local development only
+.netlify/
+start-local.*
+server.js
+
+# Setup scripts (not needed in production)
+setup-*.bat
+setup-*.sh
+setup-*.ps1
+set-key.bat
+fix-*.ps1
+create-payment.ps1
+update-merchant-address.bat
+
+# Test files
+test-*.html
+test-*.js
+stress-test.js
+api-test-suite.js
+
+# Documentation (internal)
+*_SUMMARY.md
+*_INSTRUCTIONS.md
+*_SETUP.md
+*_DEPLOYMENT.md
+FIX_*.md
+SUCCESS_*.md
+FINAL_*.md
+COMPLETE_*.md
+SET_ENV_VARS.md
+NETLIFY_*.md
+NETLIFY_*.txt
+PROJECT_OVERVIEW.md
+UI_*.md
+COLOR_PALETTE_REFERENCE.md
+TERMINAL_THEME_README.md
+
+# Anchor/Rust (not needed for deployment)
+Anchor.toml
+Cargo.toml
+programs/
+
+# Unused files
+ecommerce-cart.js
+merchant-api.js
+merchant-dashboard.js
+smart-contract-service.js
+store-frontend.js
+price-cache.js
+product-api.js
+ui-enhancements.js
+deploy-contract.js
+generate-staking-keypair.js
+set-netlify-env.js
+fix-production.js
