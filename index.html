@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZK-PayLink | Zero-Knowledge Payment Gateway</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    
+    <div class="terminal-bar">
+        <div class="terminal-controls">
+            <span class="control close"></span>
+            <span class="control minimize"></span>
+            <span class="control maximize"></span>
+        </div>
+        <div class="terminal-title">zk-paylink@latest:~$</div>
+    </div>
+
+    
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="prompt">$</span> ZK<span class="accent">-PayLink</span>
+            </div>
+            <div class="nav-links">
+                <a href="#payments" class="nav-link">Payments</a>
+                <a href="#game" class="nav-link">Game</a>
+                <a href="#dashboard" class="nav-link">Dashboard</a>
+                <button class="btn-primary" id="get-started-btn">Get Started</button>
+            </div>
+        </div>
+    </nav>
+
+    
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="terminal-window" id="hero-terminal">
+                    <div class="terminal-header-small">
+                        <span class="terminal-dot"></span>
+                        <span class="terminal-dot"></span>
+                        <span class="terminal-dot"></span>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-line">
+                            <span class="prompt">$</span> <span class="command">zk-paylink init</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="output">Initializing ZK-PayLink...</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="output success">✓ Solana blockchain connected</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="output success">✓ Payment API ready</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="output success">✓ Zero-knowledge proofs enabled</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="prompt">$</span> <span class="cursor-blink">_</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-text">
+                    <h1 class="hero-title">
+                        <span class="code-tag">&lt;zk&gt;</span><br>
+                        ZK-PayLink<br>
+                        Zero-Knowledge Payment Gateway
+                        <span class="code-tag">&lt;/zk&gt;</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Privacy-preserving Solana payments with advanced zero-knowledge proofs.<br>
+                        Secure, verifiable, and completely private. Play games, make payments, prove without revealing.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="https://pump.fun/" target="_blank" rel="noopener noreferrer" class="btn-primary btn-large" style="text-decoration: none; display: inline-block; font-size: 1.2rem; padding: 1rem 5rem; min-width: 300px;">Buy Token</a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <div class="stat-value">ZK</div>
+                            <div class="stat-label">Zero-Knowledge</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">SOL</div>
+                            <div class="stat-label">Solana Payments</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Private</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- Payment Dashboard Section - Moved to top -->
+    <section id="dashboard" class="section">
+        <div class="container">
+            <h2 class="section-title">Payment Dashboard</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+                Manage SOL payments and verify transactions using zero-knowledge proofs
+            </p>
+            <div class="merchant-tabs">
+                <button class="merchant-tab active" data-tab="overview">Overview</button>
+                <button class="merchant-tab" data-tab="payments">Payments</button>
+            </div>
+            <div class="merchant-content">
+                <div id="merchant-overview" class="merchant-tab-content active">
+                    <div class="merchant-stats-grid">
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">All-Time Volume</div>
+                            <div class="stat-value" id="stat-volume">$0.00</div>
+                            <div class="stat-desc">From verified payments only</div>
+                        </div>
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">Total Getbacks</div>
+                            <div class="stat-value" id="stat-getbacks">$0.00</div>
+                            <div class="stat-desc">100 per verified transaction</div>
+                        </div>
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">Verified Payments</div>
+                            <div class="stat-value" id="stat-payments">0</div>
+                        </div>
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">ZK Proofs Generated</div>
+                            <div class="stat-value" id="stat-proofs">0</div>
+                        </div>
+                        <div class="merchant-stat-card">
+                            <div class="stat-label">Pending Verification</div>
+                            <div class="stat-value" id="stat-pending">0</div>
+                        </div>
+                    </div>
+                    <div class="merchant-actions">
+                        <button class="btn-primary" id="create-payment-btn">Create Payment Request</button>
+                        <button class="btn-secondary" id="view-payments-btn">View All Payments</button>
+                    </div>
+                </div>
+                <div id="merchant-payments" class="merchant-tab-content">
+                    <div class="merchant-header">
+                        <h3>Payment Management</h3>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <select id="payment-filter" class="sort-select">
+                                <option value="all">All Payments</option>
+                                <option value="pending">Pending</option>
+                                <option value="verified">Verified</option>
+                                <option value="confirmed">Confirmed</option>
+                            </select>
+                            <button id="check-payments-btn" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                                Check Now
+                            </button>
+                        </div>
+                    </div>
+                    <div id="merchant-payments-list"></div>
+                </div>
+
+
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    
+    <section id="game" class="section game-section">
+        <div class="container">
+                <h2 class="section-title">Mini Game - Free to Play</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+                    Click targets to score points! Free to play - just connect your wallet to start. Compete on the leaderboard!
+                </p>
+            
+            <div class="game-container">
+                <div class="game-controls">
+                    <div class="game-info">
+                        <div class="info-item">
+                            <span class="info-label">Score:</span>
+                            <span class="info-value" id="game-score">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Lives:</span>
+                            <span class="info-value" id="game-lives">5</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Time:</span>
+                            <span class="info-value" id="game-time">0s</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Combo:</span>
+                            <span class="info-value" id="combo-indicator" style="display: none; color: #ff00ff;">0x</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Level:</span>
+                            <span class="info-value" id="difficulty-indicator" style="display: none; color: #00ff88;">1</span>
+                        </div>
+                    </div>
+                    <div id="powerup-indicator" style="display: none; margin-top: 1rem; padding: 0.75rem; background: rgba(0, 255, 136, 0.2); border: 1px solid #00ff88; border-radius: 6px; color: #00ff88; font-family: var(--font-mono); font-size: 0.9rem; text-align: center;"></div>
+                    <div id="wallet-status-indicator" style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(255, 68, 68, 0.1); border: 1px solid var(--accent-error); border-radius: 6px; color: var(--accent-error); font-family: var(--font-mono); font-size: 0.9rem; display: none;">
+                        Wallet not connected. Click the button below to connect.
+                    </div>
+                    <button class="btn-primary btn-large" id="start-game-btn">Connect Wallet & Start Game</button>
+                    <div class="game-status" id="game-status"></div>
+                </div>
+                
+                <div class="game-area" id="game-area">
+                    <div class="game-start-screen" id="game-start-screen">
+                        <h3>Ready to Play?</h3>
+                        <p style="color: var(--text-secondary); margin-top: 1rem;">Connect your wallet and click Start Game!</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Leaderboard</h3>
+                    <div id="leaderboard-container" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; min-height: 200px;">
+                        <p style="color: var(--text-secondary);">No scores yet. Be the first!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>ZK-PayLink</h4>
+                    <p>Privacy-preserving Solana payment gateway with zero-knowledge proofs.</p>
+                </div>
+                <div class="footer-section">
+                        <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#payments">Payments</a></li>
+                        <li><a href="#zk">ZK Proofs</a></li>
+                        <li><a href="#game">Game</a></li>
+                        <li><a href="#dashboard">Dashboard</a></li>
+                    </ul>
+                    </div>
+                <div class="footer-section">
+                    <h4>Follow Us</h4>
+                    <ul>
+                        <li><a href="https://x.com/zkpaylink" target="_blank" rel="noopener noreferrer">𝕏</a></li>
+                        <li><a href="https://github.com/abdelrahman147/zk-paylink" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 ZK-PayLink. All rights reserved.</p>
+                <div style="margin-top: 0.5rem;">
+                    <a href="https://x.com/zkpaylink" target="_blank" rel="noopener noreferrer" style="margin: 0 0.5rem; color: var(--text-secondary); text-decoration: none;">𝕏</a>
+                    <a href="https://github.com/abdelrahman147/zk-paylink" target="_blank" rel="noopener noreferrer" style="margin: 0 0.5rem; color: var(--text-secondary); text-decoration: none;">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Solana Web3.js SDK with multiple CDN fallbacks (latest version) -->
+    <script>
+        (function() {
+            // Latest stable version with fallbacks
+            const cdnUrls = [
+                'https://unpkg.com/@solana/web3.js@1.95.8/lib/index.iife.min.js',
+                'https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.8/lib/index.iife.min.js',
+                'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js',
+                'https://cdn.jsdelivr.net/npm/@solana/web3.js@latest/lib/index.iife.min.js'
+            ];
+            
+            let currentIndex = 0;
+            
+            function tryLoadSolana() {
+                // Check multiple possible global variable names
+                if (typeof window.SolanaWeb3 !== 'undefined' || 
+                    typeof window.solanaWeb3 !== 'undefined') {
+                    // Normalize to window.SolanaWeb3
+                    if (window.solanaWeb3 && !window.SolanaWeb3) {
+                        window.SolanaWeb3 = window.solanaWeb3;
+                    }
+                    console.log('✅ SolanaWeb3 already loaded');
+                    return;
+                        }
+                
+                if (currentIndex >= cdnUrls.length) {
+                    console.error('❌ All SolanaWeb3 CDNs failed. Some features may not work.');
+                    // Create a minimal fallback
+                    window.SolanaWeb3 = {
+                        Connection: function() { throw new Error('Solana SDK not loaded'); },
+                        PublicKey: function() { throw new Error('Solana SDK not loaded'); }
+                    };
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = cdnUrls[currentIndex];
+                script.async = false; // Load synchronously for critical dependency
+                script.crossOrigin = 'anonymous';
+                
+                script.onload = function() {
+                    // Wait a bit for the script to initialize
+                    setTimeout(function() {
+                        // Check multiple possible global variable names
+                        if (typeof window.SolanaWeb3 !== 'undefined') {
+                            console.log(`✅ SolanaWeb3 loaded successfully from CDN ${currentIndex + 1}`);
+                        } else if (typeof window.solanaWeb3 !== 'undefined') {
+                            window.SolanaWeb3 = window.solanaWeb3;
+                            console.log(`✅ SolanaWeb3 loaded from CDN ${currentIndex + 1} (as solanaWeb3)`);
+                        } else {
+                            // Check if it's available in a different format
+                            const possibleNames = ['SolanaWeb3', 'solanaWeb3', 'web3', 'solana'];
+                            let found = false;
+                            for (const name of possibleNames) {
+                                if (typeof window[name] !== 'undefined' && window[name].Connection) {
+                                    window.SolanaWeb3 = window[name];
+                                    console.log(`✅ SolanaWeb3 loaded from CDN ${currentIndex + 1} (as ${name})`);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                console.warn(`⚠️ Script loaded but SolanaWeb3 not found, trying next CDN...`);
+                                currentIndex++;
+                                tryLoadSolana();
+                            }
+                        }
+                    }, 200);
+                };
+                
+                script.onerror = function() {
+                    console.warn(`⚠️ CDN ${currentIndex + 1} failed, trying next...`);
+                    currentIndex++;
+                    setTimeout(tryLoadSolana, 500);
+                };
+                
+                document.head.appendChild(script);
+            }
+            
+            // Start loading immediately
+            tryLoadSolana();
+        })();
+    </script>
+    <script src="config.js" onerror="console.log('config.js not found, using defaults')"></script>
+        <script src="mini-game.js"></script>
+        <script src="anti-cheat.js"></script>
+    <script src="payment-storage.js"></script>
+    <script src="zk-commitment.js"></script>
+    <script src="zk-proof-service.js"></script>
+    <script src="zec-oracle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="solana-pay-integration.js"></script>
+    <script src="webhook-system.js"></script>
+    <script src="oracle-frontend.js"></script>
+    <script src="leaderboard-service.js"></script>
+        <script src="leaderboard-sheets.js"></script>
+    <script src="leaderboard-backend.js"></script>
+        <script src="script.js"></script>
+</body>
+</html>
