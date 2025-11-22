@@ -4,7 +4,7 @@
 
 Accept payments in SOL, USDC, USDT, and EURC with zero-knowledge proof privacy.
 
-🔗 **Live API**: [zk-paylink.xyz/api](https://zk-paylink.xyz/api)
+🔗 **Live Site**: [zk-paylink.xyz](https://zk-paylink.xyz)
 
 ---
 
@@ -24,7 +24,7 @@ A payment gateway API that lets you accept cryptocurrency payments while protect
 ⚡ **Simple REST API**
 - Create payment requests
 - Check payment status
-- Webhook notifications
+- Real-time verification
 
 ---
 
@@ -34,6 +34,8 @@ A payment gateway API that lets you accept cryptocurrency payments while protect
 ```
 https://zk-paylink.xyz/api
 ```
+
+**Note**: Replace `zk-paylink.xyz` with your actual domain when self-hosting.
 
 ### Create Payment
 
