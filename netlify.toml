@@ -1,0 +1,83 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+  command = "echo 'No build needed - static site'"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/api/zcash-rpc"
+  to = "/.netlify/functions/zcash-rpc"
+  status = 200
+
+[[redirects]]
+  from = "/api/leaderboard/submit"
+  to = "/.netlify/functions/leaderboard-submit"
+  status = 200
+
+[[redirects]]
+  from = "/api/leaderboard/*"
+  to = "/.netlify/functions/leaderboard"
+  status = 200
+
+[[redirects]]
+  from = "/api/proxy/coingecko/*"
+  to = "/.netlify/functions/coingecko-proxy"
+  status = 200
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/leaderboard"
+  status = 200
+
+[[redirects]]
+  from = "/api/sheets/*"
+  to = "/.netlify/functions/sheets-proxy/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/crypto-price"
+  to = "/.netlify/functions/crypto-price"
+  status = 200
+
+[[redirects]]
+  from = "/api/oracle/payments"
+  to = "/.netlify/functions/oracle-payments"
+  status = 200
+
+[[redirects]]
+  from = "/api/oracle/payments/*"
+  to = "/.netlify/functions/oracle-payments"
+  status = 200
+
+[[redirects]]
+  from = "/api/oracle/payments/*/verify"
+  to = "/.netlify/functions/oracle-payments"
+  status = 200
+
+[[redirects]]
+  from = "/api/payment-links"
+  to = "/.netlify/functions/payment-links"
+  status = 200
+
+[[redirects]]
+  from = "/api/payment-links/*"
+  to = "/.netlify/functions/payment-links"
+  status = 200
+
+[[redirects]]
+  from = "/api/payments"
+  to = "/.netlify/functions/api-payments"
+  status = 200
+
+[[redirects]]
+  from = "/api/payments/*"
+  to = "/.netlify/functions/api-payments/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/pay/*"
+  to = "/pay.html"
+  status = 200
+

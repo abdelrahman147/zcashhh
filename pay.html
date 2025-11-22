@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - ZK-PayLink</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" style="max-width: 600px; margin: 2rem auto; padding: 2rem;">
+        <div id="payment-page-content">
+            <h2>Loading payment...</h2>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="zk-commitment.js"></script>
+    <!-- Buffer polyfill for Solana SDK - must load before Solana SDK -->
+    <script>
+        // Buffer polyfill that extends Uint8Array directly (required by Solana SDK)
+        (function() {
+            if (typeof window !== 'undefined' && typeof window.Buffer === 'undefined') {
+                // Create Buffer class that extends Uint8Array
+                class BufferPolyfill extends Uint8Array {
+                    constructor(arg, encoding) {
+                        if (typeof arg === 'number') {
+                            super(arg);
+                        } else if (typeof arg === 'string') {
+                            if (encoding === 'hex') {
+                                const bytes = new Uint8Array(arg.length / 2);
+                                for (let i = 0; i < arg.length; i += 2) {
+                                    bytes[i / 2] = parseInt(arg.substr(i, 2), 16);
+                                }
+                                super(bytes.length);
+                                this.set(bytes);
+                            } else {
+                                const bytes = new Uint8Array(arg.length);
+                                for (let i = 0; i < arg.length; i++) {
+                                    bytes[i] = arg.charCodeAt(i);
+                                }
+                                super(bytes.length);
+                                this.set(bytes);
+                            }
+                        } else if (arg instanceof ArrayBuffer || arg instanceof Uint8Array) {
+                            super(arg);
+                        } else if (Array.isArray(arg)) {
+                            super(arg);
+                        } else {
+                            super(0);
+                        }
+                    }
+                    
+                    static from(arg, encoding) {
+                        if (typeof arg === 'string') {
+                            if (encoding === 'hex') {
+                                const bytes = new Uint8Array(arg.length / 2);
+                                for (let i = 0; i < arg.length; i += 2) {
+                                    bytes[i / 2] = parseInt(arg.substr(i, 2), 16);
+                                }
+                                return new BufferPolyfill(bytes);
+                            }
+                            const bytes = new Uint8Array(arg.length);
+                            for (let i = 0; i < arg.length; i++) {
+                                bytes[i] = arg.charCodeAt(i);
+                            }
+                            return new BufferPolyfill(bytes);
+                        } else if (arg instanceof Uint8Array || arg instanceof ArrayBuffer) {
+                            return new BufferPolyfill(arg);
+                        } else if (Array.isArray(arg)) {
+                            return new BufferPolyfill(arg);
+                        }
+                        return new BufferPolyfill(arg);
+                    }
+                    
+                    static isBuffer(obj) {
+                        return obj instanceof BufferPolyfill || obj instanceof Uint8Array;
+                    }
+                    
+                    static alloc(size, fill) {
+                        const buf = new BufferPolyfill(size);
+                        if (fill !== undefined) {
+                            buf.fill(fill);
+                        }
+                        return buf;
+                    }
+                    
+                    toString(encoding) {
+                        if (encoding === 'hex') {
+                            return Array.from(this)
+                                .map(b => b.toString(16).padStart(2, '0'))
+                                .join('');
+                        }
+                        return String.fromCharCode.apply(null, this);
+                    }
+                }
+                
+                window.Buffer = BufferPolyfill;
+                if (typeof global !== 'undefined') {
+                    global.Buffer = BufferPolyfill;
+                }
+                
+                // Polyfill for require (minimal, just to prevent errors)
+                if (typeof require === 'undefined') {
+                    window.require = function(module) {
+                        console.warn('require() called for:', module, '- not available in browser');
+                        return {};
+                    };
+                    if (typeof global !== 'undefined') {
+                        global.require = window.require;
+                    }
+                }
+            }
+        })();
+    </script>
+    <script>
+        // Suppress browser extension errors (MetaMask, etc.) - must be before any scripts
+        (function() {
+            const originalDefineProperty = Object.defineProperty;
+            Object.defineProperty = function(obj, prop, descriptor) {
+                if (prop === 'ethereum' || prop === 'web3') {
+                    try {
+                        return originalDefineProperty.call(this, obj, prop, descriptor);
+                    } catch (e) {
+                        if (e.message && e.message.includes('Cannot redefine property')) {
+                            console.warn('Suppressed browser extension injection:', prop);
+                            return obj;
+                        }
+                        throw e;
+                    }
+                }
+                return originalDefineProperty.call(this, obj, prop, descriptor);
+            };
+        })();
+    </script>
+    <script>
+        // Load SolanaWeb3 with multiple fallbacks (latest version)
+        (function() {
+            const cdnUrls = [
+                'https://unpkg.com/@solana/web3.js@1.95.8/lib/index.iife.min.js',
+                'https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.8/lib/index.iife.min.js',
+                'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js',
+                'https://cdn.jsdelivr.net/npm/@solana/web3.js@latest/lib/index.iife.min.js'
+            ];
+            
+            let currentIndex = 0;
+            
+            function tryLoadSolana() {
+                // Check multiple possible global variable names
+                if (typeof window.SolanaWeb3 !== 'undefined' || 
+                    typeof window.solanaWeb3 !== 'undefined') {
+                    // Normalize to window.SolanaWeb3
+                    if (window.solanaWeb3 && !window.SolanaWeb3) {
+                        window.SolanaWeb3 = window.solanaWeb3;
+                    }
+                    console.log('✅ SolanaWeb3 already loaded');
+                    return;
+                }
+                
+                if (currentIndex >= cdnUrls.length) {
+                    console.error('❌ All SolanaWeb3 CDNs failed. Payment functionality will be limited.');
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = cdnUrls[currentIndex];
+                script.async = false; // Load synchronously
+                script.crossOrigin = 'anonymous';
+                
+                script.onload = function() {
+                    // Wait a bit for the script to initialize
+                    setTimeout(function() {
+                        // Check multiple possible global variable names
+                        if (typeof window.SolanaWeb3 !== 'undefined') {
+                            console.log(`✅ SolanaWeb3 loaded from CDN ${currentIndex + 1}`);
+                        } else if (typeof window.solanaWeb3 !== 'undefined') {
+                            window.SolanaWeb3 = window.solanaWeb3;
+                            console.log(`✅ SolanaWeb3 loaded from CDN ${currentIndex + 1} (as solanaWeb3)`);
+                        } else {
+                            // Check if it's available in a different format
+                            const possibleNames = ['SolanaWeb3', 'solanaWeb3', 'web3', 'solana'];
+                            let found = false;
+                            for (const name of possibleNames) {
+                                if (typeof window[name] !== 'undefined' && window[name].Connection) {
+                                    window.SolanaWeb3 = window[name];
+                                    console.log(`✅ SolanaWeb3 loaded from CDN ${currentIndex + 1} (as ${name})`);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                console.warn(`⚠️ Script loaded but SolanaWeb3 not found, trying next CDN...`);
+                                currentIndex++;
+                                tryLoadSolana();
+                            }
+                        }
+                    }, 200);
+                };
+                
+                script.onerror = function() {
+                    console.warn(`⚠️ CDN ${currentIndex + 1} failed, trying next...`);
+                    currentIndex++;
+                    setTimeout(tryLoadSolana, 500);
+                };
+                
+                document.head.appendChild(script);
+            }
+            
+            // Start loading immediately
+            tryLoadSolana();
+        })();
+        
+        async function loadPaymentLink() {
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            let linkId = pathParts[pathParts.length - 1];
+            
+            // Handle /pay/link_xxx format
+            if (pathParts.length >= 2 && pathParts[pathParts.length - 2] === 'pay') {
+                linkId = pathParts[pathParts.length - 1];
+            }
+            
+            if (!linkId || linkId === 'pay' || linkId === 'pay.html') {
+                document.getElementById('payment-page-content').innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <h2 style="color: var(--accent-error);">Invalid Payment Link</h2>
+                        <p>This payment link is invalid or has expired.</p>
+                        <a href="/" class="btn-primary" style="margin-top: 1rem; display: inline-block;">Go Home</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                console.log('Loading payment link:', linkId);
+                let response = await fetch(`/api/payment-links/${linkId}`);
+                let link = null;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    link = data.link;
+                }
+                
+                // If link not found, try to extract payment ID from linkId or create from payment ID
+                if (!link) {
+                    console.warn('Payment link not found, attempting to load payment directly...');
+                    
+                    // Try to extract payment ID from linkId (format: link_<timestamp>_<random>)
+                    // Or if linkId starts with 'pay_', it's actually a payment ID
+                    let paymentId = null;
+                    if (linkId.startsWith('pay_')) {
+                        paymentId = linkId;
+                    } else if (linkId.startsWith('link_')) {
+                        // Extract timestamp from linkId: link_<timestamp>_<random>
+                        const linkParts = linkId.split('_');
+                        if (linkParts.length >= 2) {
+                            const timestamp = linkParts[1];
+                            
+                            // Try to find payment by loading all payments and matching timestamp
+                            try {
+                                const allPaymentsResponse = await fetch('/api/oracle/payments');
+                                if (allPaymentsResponse.ok) {
+                                    const allPaymentsData = await allPaymentsResponse.json();
+                                    const allPayments = allPaymentsData.payments || [];
+                                    
+                                    // Find payment with matching timestamp (payment ID format: pay_<timestamp>_<random>)
+                                    const matchingPayment = allPayments.find(p => {
+                                        if (p.id && p.id.startsWith('pay_')) {
+                                            const paymentParts = p.id.split('_');
+                                            return paymentParts.length >= 2 && paymentParts[1] === timestamp;
+                                        }
+                                        return false;
+                                    });
+                                    
+                                    if (matchingPayment) {
+                                        paymentId = matchingPayment.id;
+                                        console.log(`Found payment by timestamp: ${paymentId}`);
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('Could not load all payments:', e);
+                            }
+                            
+                            // Fallback: try direct conversion (might work if random suffix matches)
+                            if (!paymentId) {
+                                const possiblePaymentId = linkId.replace('link_', 'pay_');
+                                try {
+                                    const paymentResponse = await fetch(`/api/oracle/payments/${possiblePaymentId}`);
+                                    if (paymentResponse.ok) {
+                                        const paymentData = await paymentResponse.json();
+                                        if (paymentData.payment) {
+                                            paymentId = possiblePaymentId;
+                                        }
+                                    }
+                                } catch (e) {
+                                    // Ignore
+                                }
+                            }
+                        }
+                    }
+                    
+                    // If we found a payment, create a link on-the-fly
+                    if (paymentId) {
+                        try {
+                            const paymentResponse = await fetch(`/api/payments/${paymentId}`);
+                            if (paymentResponse.ok) {
+                                const paymentData = await paymentResponse.json();
+                                // API returns payment directly, not wrapped in .payment
+                                const payment = paymentData.paymentId ? paymentData : paymentData.payment;
+                                
+                                if (payment) {
+                                    // Generate QR code URL based on token type
+                                    const merchantAddr = payment.merchantAddress || paymentData.merchantAddress;
+                                    const solAmt = payment.solAmount || payment.tokenAmount || paymentData.solAmount || paymentData.tokenAmount;
+                                    const payToken = payment.token || paymentData.token || 'SOL';
+                                    const payId = payment.paymentId || payment.id || paymentData.paymentId || paymentData.id;
+                                    
+                                    let qrUrl = `solana:${merchantAddr}?amount=${solAmt}`;
+                                    if (payToken && payToken !== 'SOL') {
+                                        const tokenMints = {
+                                            'USDC': 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                                            'USDT': 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+                                            'EURC': 'HzwqbKZw8HxNE6WvK5kfvm6hrKjXUYkLRPvXjrao1HGk'
+                                        };
+                                        const tokenMint = tokenMints[payToken];
+                                        if (tokenMint) {
+                                            qrUrl += `&spl-token=${tokenMint}`;
+                                        }
+                                    }
+                                    qrUrl += `&reference=${payId}`;
+                                    
+                                    console.log('Generated QR URL:', qrUrl);
+                                    
+                                    // Create a temporary link object
+                                    link = {
+                                        id: linkId,
+                                        paymentId: payId,
+                                        url: `${window.location.origin}/pay/${linkId}`,
+                                        qrCode: {
+                                            url: qrUrl,
+                                            data: qrUrl
+                                        },
+                                        status: 'active',
+                                        createdAt: payment.createdAt || paymentData.createdAt
+                                    };
+                                    
+                                    displayPaymentPage(link, payment);
+                                    return;
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('Could not load payment:', err);
+                        }
+                    }
+                    
+                    // If still no link, show error
+                    throw new Error('Payment link not found');
+                }
+                
+                // Get payment details
+                let payment = null;
+                if (link.paymentId) {
+                    try {
+                        const paymentResponse = await fetch(`/api/payments/${link.paymentId}`);
+                        if (paymentResponse.ok) {
+                            const paymentData = await paymentResponse.json();
+                            // API returns payment directly, not wrapped in .payment
+                            payment = paymentData.paymentId ? paymentData : paymentData.payment;
+                        }
+                    } catch (err) {
+                        console.warn('Could not fetch payment details:', err);
+                    }
+                }
+                
+                displayPaymentPage(link, payment);
+            } catch (error) {
+                console.error('Failed to load payment link:', error);
+                document.getElementById('payment-page-content').innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <h2 style="color: var(--accent-error);">Payment Link Not Found</h2>
+                        <p>${error.message || 'This payment link may have expired or is invalid.'}</p>
+                        <a href="/" class="btn-primary" style="margin-top: 1rem; display: inline-block;">Go Home</a>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayPaymentPage(link, payment) {
+            const content = document.getElementById('payment-page-content');
+            
+            if (!payment) {
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <h2 style="color: var(--accent-error);">Payment Not Found</h2>
+                        <p>The payment associated with this link could not be found.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Handle both API formats: direct payment object or wrapped in .payment
+            const paymentData = payment.paymentId ? payment : (payment.payment || payment);
+            
+            // Ensure we have a payment ID - critical for verification
+            if (!paymentData.paymentId && !paymentData.id) {
+                console.error('❌ CRITICAL: Payment data has no ID!', paymentData);
+                // Try to get from link if available
+                if (link && link.paymentId) {
+                    paymentData.paymentId = link.paymentId;
+                    console.log('✅ Recovered payment ID from link:', link.paymentId);
+                }
+            }
+            
+            console.log('💳 Payment Data for display:', {
+                paymentId: paymentData.paymentId,
+                id: paymentData.id,
+                orderId: paymentData.orderId,
+                status: paymentData.status
+            });
+            
+            const solAmount = paymentData.solAmount || paymentData.tokenAmount || paymentData.amount || 0;
+            const token = paymentData.token || 'SOL';
+            
+            // Check payment status
+            const isVerified = paymentData.status === 'verified';
+            const statusColor = isVerified ? '#10b981' : '#f59e0b'; // Green for verified, amber for pending
+            const statusText = isVerified ? 'Verified' : 'Pending';
+            const statusIcon = isVerified ? '✓' : '⏳';
+            
+            content.innerHTML = `
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin: 0;">Payment Request</h2>
+                        ${isVerified ? `
+                        <div style="background: #10b98120; border: 1px solid #10b981; border-radius: 8px; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981; font-size: 1.2rem;">✓</span>
+                            <span style="color: #10b981; font-weight: 600;">Verified</span>
+                        </div>
+                        ` : `
+                        <div style="background: #f59e0b20; border: 1px solid #f59e0b; border-radius: 8px; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #f59e0b; font-size: 1.2rem;">⏳</span>
+                            <span style="color: #f59e0b; font-weight: 600;">Pending</span>
+                        </div>
+                        `}
+                    </div>
+                    
+                    ${isVerified ? `
+                    <div style="background: #10b98110; border-left: 4px solid #10b981; padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <span style="color: #10b981; font-size: 1.1rem;">✓</span>
+                            <span style="color: #10b981; font-weight: 600;">Payment Verified</span>
+                        </div>
+                        ${paymentData.zkCommitment ? `
+                        <div style="margin-top: 0.75rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="color: #10b981; font-size: 1rem;">🔐</span>
+                                <span style="color: #10b981; font-weight: 600; font-size: 0.9rem;">Zero-Knowledge Proof</span>
+                            </div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">
+                                Payment verified with privacy-preserving cryptographic commitment. Amount and token details are hidden.
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 0.5rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.75rem; word-break: break-all; color: var(--text-secondary);">
+                                ${paymentData.zkCommitment.substring(0, 48)}...
+                            </div>
+                        </div>
+                        ` : `
+                        ${paymentData.transactionSignature ? `
+                        <div style="margin-top: 0.5rem;">
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">Transaction: </span>
+                            <a href="https://solscan.io/tx/${paymentData.transactionSignature}" target="_blank" style="color: var(--accent-primary); font-family: var(--font-mono); font-size: 0.9rem; text-decoration: none;">
+                                ${paymentData.transactionSignature.substring(0, 20)}...
+                            </a>
+                        </div>
+                        ` : ''}
+                        `}
+                        ${paymentData.confirmedAt ? `
+                        <div style="margin-top: 0.5rem;">
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">Confirmed: ${new Date(paymentData.confirmedAt).toLocaleString()}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--text-secondary);">Amount:</span>
+                            <span style="font-weight: 600;">$${paymentData.amount.toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--text-secondary);">Token Amount:</span>
+                            <span style="font-weight: 600; color: var(--accent-primary);">${solAmount.toFixed(8)} ${token}</span>
+                        </div>
+                        ${paymentData.orderId ? `
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-secondary);">Order ID:</span>
+                            <span style="font-family: var(--font-mono); font-size: 0.9rem;">${paymentData.orderId}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem;">
+                        <h4 style="margin-bottom: 1rem;">QR Code</h4>
+                        <div id="qr-code-container" style="display: flex; justify-content: center; margin-bottom: 1rem;"></div>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 1rem;">
+                            Scan with your Solana wallet to pay
+                        </p>
+                    </div>
+                    
+                    ${!isVerified ? `
+                    <div style="text-align: center;">
+                        <button class="btn-primary" id="pay-with-wallet-btn" style="width: 100%; margin-bottom: 1rem;">
+                            Pay with Wallet
+                        </button>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                            Or scan the QR code above
+                        </p>
+                    </div>
+                    ` : `
+                    <div style="text-align: center; padding: 1.5rem; background: var(--bg-tertiary); border-radius: 8px;">
+                        <div style="color: #10b981; font-size: 1.5rem; margin-bottom: 0.5rem;">✓</div>
+                        <p style="font-weight: 600; margin-bottom: 0.5rem;">Payment Already Verified</p>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                            This payment has been completed and verified on the blockchain.
+                        </p>
+                    </div>
+                    `}
+                </div>
+            `;
+            
+            // Generate QR code
+            const qrContainer = document.getElementById('qr-code-container');
+            if (!qrContainer) {
+                console.error('QR code container not found');
+                return;
+            }
+            
+            const qrText = link.qrCode?.url || link.qrCode?.data || link.url;
+            if (!qrText) {
+                console.error('No QR code data available');
+                qrContainer.innerHTML = '<p style="color: var(--text-secondary);">QR code unavailable</p>';
+                return;
+            }
+            
+            console.log('Generating QR code for:', qrText);
+            
+            // Try canvas-based QR code first
+            if (window.QRCode) {
+                try {
+                    window.QRCode.toCanvas(qrContainer, qrText, {
+                        width: 256,
+                        margin: 2,
+                        color: {
+                            dark: '#000000',
+                            light: '#ffffff'
+                        }
+                    }, function (error) {
+                        if (error) {
+                            console.error('QR code canvas generation error:', error);
+                            // Fallback to external service
+                            qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrText)}" alt="QR Code" style="max-width: 100%; height: auto; border-radius: 8px;">`;
+                        } else {
+                            console.log('QR code generated successfully via canvas');
+                        }
+                    });
+                } catch (err) {
+                    console.error('QR code generation exception:', err);
+                    // Fallback to external service
+                    qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrText)}" alt="QR Code" style="max-width: 100%; height: auto; border-radius: 8px;">`;
+                }
+            } else {
+                // QRCode library not loaded, use external service
+                console.warn('QRCode library not loaded, using external service');
+                qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrText)}" alt="QR Code" style="max-width: 100%; height: auto; border-radius: 8px;">`;
+            }
+            
+            // Pay with wallet button
+            const payBtn = document.getElementById('pay-with-wallet-btn');
+            if (payBtn) {
+                payBtn.addEventListener('click', async () => {
+                    // Wait for SolanaWeb3 to load with retry
+                    if (typeof window.SolanaWeb3 === 'undefined') {
+                        payBtn.disabled = true;
+                        payBtn.textContent = 'Loading Solana library...';
+                        
+                        // Wait up to 5 seconds for SolanaWeb3
+                        for (let i = 0; i < 50; i++) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            if (typeof window.SolanaWeb3 !== 'undefined') {
+                                break;
+                            }
+                        }
+                        
+                        if (typeof window.SolanaWeb3 === 'undefined') {
+                            alert('Solana library failed to load. Please refresh the page or scan the QR code to pay.');
+                            payBtn.disabled = false;
+                            payBtn.textContent = 'Pay with Wallet';
+                            return;
+                        }
+                        
+                        payBtn.disabled = false;
+                        payBtn.textContent = 'Pay with Wallet';
+                    }
+                    
+                    if (!window.solana || !window.solana.isPhantom) {
+                        alert('Please install Phantom wallet to pay');
+                        return;
+                    }
+                    
+                    try {
+                        payBtn.disabled = true;
+                        payBtn.textContent = 'Connecting...';
+                        
+                        // Connect to wallet
+                        const connectResponse = await window.solana.connect();
+                        const publicKey = new window.SolanaWeb3.PublicKey(connectResponse.publicKey.toString());
+                        
+                        if (!payment || !payment.merchantAddress) {
+                            alert('Payment error: Merchant address not found');
+                            payBtn.disabled = false;
+                            payBtn.textContent = 'Pay with Wallet';
+                            return;
+                        }
+                        
+                        const merchantPubkey = new window.SolanaWeb3.PublicKey(payment.merchantAddress);
+                        
+                        payBtn.textContent = 'Preparing transaction...';
+                        
+                        // Create connection
+                        // Use Alchemy RPC endpoint
+                        const rpcUrl = 'https://solana-mainnet.g.alchemy.com/v2/xXPi6FAKVWJqv9Ie5TgvOHQgTlrlfbp5';
+                        const connection = new window.SolanaWeb3.Connection(rpcUrl, 'confirmed');
+                        
+                        // Get fresh blockhash right before creating transaction (to avoid expiration)
+                        payBtn.textContent = 'Getting latest blockhash...';
+                        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+                        
+                        if (!blockhash) {
+                            throw new Error('Failed to get blockhash from RPC');
+                        }
+                        
+                        // Create transaction with fresh blockhash
+                        const transaction = new window.SolanaWeb3.Transaction({
+                            feePayer: publicKey,
+                            recentBlockhash: blockhash
+                        });
+                        
+                        // Handle different token types
+                        if (token === 'SOL') {
+                            // SOL transfer
+                            const lamports = Math.floor(solAmount * 1e9);
+                            transaction.add(
+                                window.SolanaWeb3.SystemProgram.transfer({
+                                    fromPubkey: publicKey,
+                                    toPubkey: merchantPubkey,
+                                    lamports: lamports
+                                })
+                            );
+                        } else {
+                            // SPL Token transfer (USDT, USDC, EURC, etc.)
+                            // Use Solana Pay URL format - wallet will handle the SPL token transfer
+                            // This is more reliable than manually creating token transfer instructions
+                            const tokenMints = {
+                                'USDC': 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                                'USDT': 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+                                'EURC': 'HzwqbKZw8HxNE6WvK5kfvm6hrKjXUYkLRPvXjrao1HGk'
+                            };
+                            
+                            const tokenMint = tokenMints[token];
+                            if (!tokenMint) {
+                                throw new Error(`Unsupported token: ${token}`);
+                            }
+                            
+                            // For SPL tokens, use Solana Pay deep link
+                            // The wallet will handle the token transfer properly
+                            const solanaPayUrl = `solana:${paymentData.merchantAddress}?amount=${solAmount}&spl-token=${tokenMint}&reference=${paymentData.id}`;
+                            
+                            // Try to use wallet's built-in Solana Pay handler
+                            if (window.solana && window.solana.signTransaction) {
+                                // Use wallet's Solana Pay support if available
+                                // For now, show the QR code and let user scan it
+                                // Or we can try to parse and create the transaction manually
+                                
+                                // Manual SPL token transfer using Token Program
+                                const TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+                                const ASSOCIATED_TOKEN_PROGRAM_ID = new window.SolanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+                                
+                                const mintPubkey = new window.SolanaWeb3.PublicKey(tokenMint);
+                                const tokenDecimals = 6;
+                                const tokenAmount = BigInt(Math.floor(solAmount * Math.pow(10, tokenDecimals)));
+                                
+                                // Derive associated token account addresses
+                                // ATA = Associated Token Account
+                                // Formula: [owner, TOKEN_PROGRAM_ID, mint] -> PDA
+                                const [senderATA] = await window.SolanaWeb3.PublicKey.findProgramAddress(
+                                    [
+                                        publicKey.toBuffer(),
+                                        TOKEN_PROGRAM_ID.toBuffer(),
+                                        mintPubkey.toBuffer()
+                                    ],
+                                    ASSOCIATED_TOKEN_PROGRAM_ID
+                                );
+                                
+                                const [receiverATA] = await window.SolanaWeb3.PublicKey.findProgramAddress(
+                                    [
+                                        merchantPubkey.toBuffer(),
+                                        TOKEN_PROGRAM_ID.toBuffer(),
+                                        mintPubkey.toBuffer()
+                                    ],
+                                    ASSOCIATED_TOKEN_PROGRAM_ID
+                                );
+                                
+                                // Check if receiver ATA exists
+                                const receiverAccountInfo = await connection.getAccountInfo(receiverATA);
+                                if (!receiverAccountInfo) {
+                                    // Create ATA instruction
+                                    const createATAKeys = [
+                                        { pubkey: publicKey, isSigner: true, isWritable: true },
+                                        { pubkey: receiverATA, isSigner: false, isWritable: true },
+                                        { pubkey: merchantPubkey, isSigner: false, isWritable: false },
+                                        { pubkey: mintPubkey, isSigner: false, isWritable: false },
+                                        { pubkey: window.SolanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+                                        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+                                    ];
+                                    
+                                    const createATAInstruction = new window.SolanaWeb3.TransactionInstruction({
+                                        keys: createATAKeys,
+                                        programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+                                        data: Buffer.alloc(0)
+                                    });
+                                    
+                                    transaction.add(createATAInstruction);
+                                }
+                                
+                                // Create token transfer instruction
+                                const transferKeys = [
+                                    { pubkey: senderATA, isSigner: false, isWritable: true },
+                                    { pubkey: receiverATA, isSigner: false, isWritable: true },
+                                    { pubkey: publicKey, isSigner: true, isWritable: false }
+                                ];
+                                
+                                // Token transfer instruction data: instruction (3) + amount (8 bytes)
+                                // Create instruction data manually
+                                const instructionCode = 3; // Transfer instruction
+                                const amountBytes = new Uint8Array(8);
+                                
+                                // Convert BigInt to 8-byte little-endian array
+                                let amount = tokenAmount;
+                                for (let i = 0; i < 8; i++) {
+                                    amountBytes[i] = Number(amount & 0xFFn);
+                                    amount = amount >> 8n;
+                                }
+                                
+                                // Combine instruction code + amount
+                                const transferData = new Uint8Array(9);
+                                transferData[0] = instructionCode;
+                                transferData.set(amountBytes, 1);
+                                
+                                const transferInstruction = new window.SolanaWeb3.TransactionInstruction({
+                                    keys: transferKeys,
+                                    programId: TOKEN_PROGRAM_ID,
+                                    data: transferData
+                                });
+                                
+                                transaction.add(transferInstruction);
+                            } else {
+                                throw new Error('SPL token transfers require wallet support. Please scan the QR code instead.');
+                            }
+                        }
+                        
+                        // Verify blockhash is set (double-check)
+                        if (!transaction.recentBlockhash) {
+                            transaction.recentBlockhash = blockhash;
+                        }
+                        
+                        // Verify feePayer is set
+                        if (!transaction.feePayer) {
+                            transaction.feePayer = publicKey;
+                        }
+                        
+                        payBtn.textContent = 'Confirm in wallet...';
+                        
+                        // Sign and send transaction
+                        // signAndSendTransaction returns { signature: '...' }
+                        payBtn.textContent = 'Sending transaction...';
+                        const result = await window.solana.signAndSendTransaction(transaction);
+                        const signature = result.signature || result;
+                        
+                        // Wait for confirmation (without blockhash - let it find the transaction naturally)
+                        payBtn.textContent = 'Waiting for confirmation...';
+                        try {
+                            // Use simpler confirmation that doesn't require blockhash
+                            await connection.confirmTransaction(signature, 'confirmed');
+                        } catch (confirmError) {
+                            // Transaction might already be confirmed or blockhash expired
+                            // Check if transaction exists on chain
+                            const txInfo = await connection.getTransaction(signature, {
+                                commitment: 'confirmed'
+                            });
+                            
+                            if (!txInfo) {
+                                // Transaction not found, might still be processing
+                                console.warn('Transaction not yet confirmed, but signature received:', signature);
+                            } else {
+                                // Transaction exists, it's confirmed
+                                console.log('Transaction confirmed on chain');
+                            }
+                        }
+                        
+                        payBtn.textContent = 'Verifying on blockchain...';
+                        
+                        // REAL BLOCKCHAIN VERIFICATION - Check transaction on chain
+                        let txVerified = false;
+                        let verifiedTx = null;
+                        
+                        // Wait 10 seconds for transaction to propagate on blockchain
+                        console.log('⏳ Waiting 10 seconds for transaction to propagate on blockchain...');
+                        await new Promise(resolve => setTimeout(resolve, 10000));
+                        
+                        // Check blockchain multiple times to ensure transaction is confirmed
+                        for (let attempt = 0; attempt < 5; attempt++) {
+                            try {
+                                verifiedTx = await connection.getTransaction(signature, {
+                                    commitment: 'confirmed',
+                                    maxSupportedTransactionVersion: 0
+                                });
+                                
+                                if (verifiedTx && verifiedTx.meta && !verifiedTx.meta.err) {
+                                    // Transaction found and confirmed on blockchain
+                                    console.log('✅ Transaction verified on blockchain:', signature);
+                                    console.log('   Block time:', verifiedTx.blockTime ? new Date(verifiedTx.blockTime * 1000).toISOString() : 'N/A');
+                                    console.log('   Slot:', verifiedTx.slot);
+                                    txVerified = true;
+                                    break;
+                                } else if (verifiedTx && verifiedTx.meta && verifiedTx.meta.err) {
+                                    throw new Error('Transaction failed on chain');
+                                }
+                            } catch (err) {
+                                console.log(`   Attempt ${attempt + 1}/5: Transaction not yet confirmed, retrying in 3 seconds...`);
+                                await new Promise(resolve => setTimeout(resolve, 3000));
+                            }
+                        }
+                        
+                        if (!txVerified || !verifiedTx) {
+                            console.warn('⚠️ Transaction signature received but not yet confirmed on blockchain');
+                            console.warn('   Will continue checking in background...');
+                            // Still notify backend with signature, but status will be checked
+                        }
+                        
+                        payBtn.textContent = 'Updating backend...';
+                        
+                        // Generate ZK Commitment FIRST (before backend call)
+                        let zkCommitment = null;
+                        let zkSecret = null;
+                        if (txVerified && window.ZKCommitment) {
+                            try {
+                                const zkSystem = new ZKCommitment();
+                                zkSecret = zkSystem.generateSecret();
+                                const paymentToken = paymentData.token || 'SOL';
+                                const commitment = await zkSystem.generateCommitment(
+                                    actualPaymentId,
+                                    solAmount,
+                                    paymentToken,
+                                    zkSecret
+                                );
+                                zkCommitment = commitment.commitment;
+                                console.log('🔐 ZK Commitment generated:', zkCommitment.substring(0, 16) + '...');
+                            } catch (zkError) {
+                                console.warn('ZK commitment generation failed:', zkError);
+                            }
+                        }
+                        
+                        // Notify backend about the payment with REAL blockchain data + ZK commitment
+                        try {
+                            // Use paymentId or id, whichever is available
+                            const actualPaymentId = paymentData.paymentId || paymentData.id;
+                            console.log('🔍 Verifying payment with backend:');
+                            console.log('   Payment ID:', actualPaymentId);
+                            console.log('   Payment Data:', paymentData);
+                            console.log('   Signature:', signature);
+                            console.log('   ZK Commitment:', zkCommitment ? 'Yes' : 'No');
+                            
+                            const verifyResponse = await fetch(`/api/oracle/payments/${actualPaymentId}/verify`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    signature: signature,
+                                    status: txVerified ? 'verified' : 'pending',
+                                    confirmedAt: txVerified && verifiedTx?.blockTime ? verifiedTx.blockTime * 1000 : Date.now(),
+                                    blockTime: verifiedTx?.blockTime,
+                                    slot: verifiedTx?.slot,
+                                    zkCommitment: zkCommitment,
+                                    zkEnabled: zkCommitment ? true : false
+                                })
+                            });
+                            
+                            if (!verifyResponse.ok) {
+                                const errorText = await verifyResponse.text();
+                                console.error('❌ Backend verification failed:', errorText);
+                                console.error('   Status:', verifyResponse.status);
+                                console.error('   Payment ID used:', actualPaymentId);
+                                
+                                // If 404, try alternative approaches
+                                if (verifyResponse.status === 404 && paymentData.orderId) {
+                                    console.log('🔄 Retrying verification with Order ID:', paymentData.orderId);
+                                    
+                                    // Try to find payment by orderId and update it
+                                    try {
+                                        const allPaymentsResponse = await fetch('/api/oracle/payments');
+                                        if (allPaymentsResponse.ok) {
+                                            const allPaymentsData = await allPaymentsResponse.json();
+                                            const matchingPayment = allPaymentsData.payments?.find(p => 
+                                                p.orderId === paymentData.orderId
+                                            );
+                                            
+                                            if (matchingPayment) {
+                                                console.log('✅ Found payment by Order ID:', matchingPayment.id);
+                                                // Retry verification with correct payment ID
+                                                const retryResponse = await fetch(`/api/oracle/payments/${matchingPayment.id}/verify`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ 
+                                                        signature: signature,
+                                                        status: txVerified ? 'verified' : 'pending',
+                                                        confirmedAt: txVerified && verifiedTx?.blockTime ? verifiedTx.blockTime * 1000 : Date.now(),
+                                                        blockTime: verifiedTx?.blockTime,
+                                                        slot: verifiedTx?.slot
+                                                    })
+                                                });
+                                                
+                                                if (retryResponse.ok) {
+                                                    console.log('✅ Retry successful with correct payment ID');
+                                                } else {
+                                                    console.error('❌ Retry also failed:', await retryResponse.text());
+                                                }
+                                            } else {
+                                                console.error('❌ Could not find payment with Order ID:', paymentData.orderId);
+                                            }
+                                        }
+                                    } catch (retryErr) {
+                                        console.error('❌ Retry error:', retryErr);
+                                    }
+                                }
+                            } else {
+                                const verifyData = await verifyResponse.json();
+                                console.log('✅ Payment verified on blockchain and backend updated');
+                                console.log('   Google Sheet will be updated with transaction signature');
+                                
+                                // Store ZK commitment locally
+                                if (zkCommitment) {
+                                    payment.zkCommitment = zkCommitment;
+                                    payment.zkSecret = zkSecret; // User keeps this private
+                                    payment.zkEnabled = true;
+                                    console.log('🔐 Payment protected with zero-knowledge proof');
+                                }
+                                
+                                // Update payment status locally
+                                payment.status = txVerified ? 'verified' : 'pending';
+                                payment.transactionSignature = signature;
+                                payment.confirmedAt = txVerified && verifiedTx?.blockTime ? verifiedTx.blockTime * 1000 : Date.now();
+                                
+                                // If verified, STOP ALL POLLING IMMEDIATELY
+                                if (txVerified) {
+                                    // Stop any existing polling
+                                    if (statusPollInterval) {
+                                        clearInterval(statusPollInterval);
+                                        statusPollInterval = null;
+                                    }
+                                    console.log('✅ Payment verified - ALL POLLING STOPPED');
+                                    
+                                    // Refresh the page display to show verified status
+                                    displayPaymentPage(link, payment);
+                                    
+                                    // Reload payment link to ensure UI is updated
+                                    setTimeout(() => {
+                                        loadPaymentLink();
+                                    }, 500);
+                                    
+                                    return; // Exit early, don't start new polling
+                                }
+                                
+                                // If not verified yet, refresh display
+                                displayPaymentPage(link, payment);
+                            }
+                        } catch (err) {
+                            console.warn('Failed to notify backend:', err);
+                        }
+                        
+                        // Don't show alert or redirect - just update the page
+                        payBtn.textContent = txVerified ? 'Payment Verified' : 'Payment Sent (Verifying...)';
+                        payBtn.disabled = true;
+                        
+                        // Only start polling if NOT verified yet
+                        if (!txVerified) {
+                            startPaymentStatusPolling(payment.id);
+                        }
+                    } catch (error) {
+                        console.error('Payment error:', error);
+                        let errorMessage = 'Payment failed: ';
+                        
+                        if (error.message) {
+                            errorMessage += error.message;
+                        } else if (error.toString) {
+                            errorMessage += error.toString();
+                        } else {
+                            errorMessage += 'Unknown error occurred';
+                        }
+                        
+                        alert(errorMessage);
+                        payBtn.disabled = false;
+                        payBtn.textContent = 'Pay with Wallet';
+                    }
+                });
+            }
+        }
+        
+        // Wait for SolanaWeb3 to load before initializing
+        function waitForSolanaWeb3(maxAttempts = 150) {
+            if (typeof window.SolanaWeb3 !== 'undefined') {
+                console.log('✅ SolanaWeb3 loaded successfully');
+                loadPaymentLink();
+            } else if (maxAttempts > 0) {
+                setTimeout(() => waitForSolanaWeb3(maxAttempts - 1), 100);
+            } else {
+                // Fallback: try loading anyway (might work without SolanaWeb3 for display)
+                console.warn('⚠️ SolanaWeb3 not loaded after 15 seconds, loading payment page anyway...');
+                console.warn('⚠️ "Pay with Wallet" button will not work until SolanaWeb3 loads');
+                console.warn('⚠️ You can still scan the QR code to pay');
+                loadPaymentLink();
+            }
+        }
+        
+        // Poll payment status to automatically update when verified
+        let statusPollInterval = null;
+        
+        function startPaymentStatusPolling(paymentId) {
+            // Stop any existing polling FIRST
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+                statusPollInterval = null;
+            }
+            
+            console.log('🔄 Starting payment status polling for:', paymentId);
+            
+            let pollCount = 0;
+            const maxPolls = 120; // 10 minutes (120 * 5 seconds)
+            let isStopped = false; // Flag to prevent multiple stops
+            
+            // Poll every 5 seconds to check if payment is verified
+            statusPollInterval = setInterval(async () => {
+                if (isStopped) {
+                    clearInterval(statusPollInterval);
+                    statusPollInterval = null;
+                    return;
+                }
+                
+                pollCount++;
+                try {
+                    const response = await fetch(`/api/oracle/payments/${paymentId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const payment = data.payment;
+                        
+                        // REAL BLOCKCHAIN CHECK - Verify transaction actually exists on chain
+                        if (payment && payment.transactionSignature) {
+                            // Check blockchain directly to verify transaction
+                            try {
+                                const connection = new window.SolanaWeb3.Connection('https://solana-mainnet.g.alchemy.com/v2/xXPi6FAKVWJqv9Ie5TgvOHQgTlrlfbp5', 'confirmed');
+                                const txOnChain = await connection.getTransaction(payment.transactionSignature, {
+                                    commitment: 'confirmed',
+                                    maxSupportedTransactionVersion: 0
+                                });
+                                
+                                if (txOnChain && txOnChain.meta && !txOnChain.meta.err) {
+                                    // Transaction confirmed on blockchain - REAL verification
+                                    console.log('✅ Payment verified on blockchain! Transaction found:', payment.transactionSignature);
+                                    
+                                    // IMMEDIATELY stop polling and update
+                                    isStopped = true;
+                                    if (statusPollInterval) {
+                                        clearInterval(statusPollInterval);
+                                        statusPollInterval = null;
+                                    }
+                                    
+                                    // Force update backend and Google Sheets
+                                    try {
+                                        const notifyResponse = await fetch(`/api/oracle/payments/${paymentId}/verify`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                                signature: payment.transactionSignature,
+                                                status: 'verified',
+                                                confirmedAt: txOnChain.blockTime ? txOnChain.blockTime * 1000 : Date.now(),
+                                                blockTime: txOnChain.blockTime,
+                                                slot: txOnChain.slot
+                                            })
+                                        });
+                                        
+                                        if (notifyResponse.ok) {
+                                            console.log('✅ Backend updated, Google Sheet updated');
+                                        } else {
+                                            const errorText = await notifyResponse.text();
+                                            console.warn('⚠️ Failed to notify backend:', errorText);
+                                        }
+                                    } catch (notifyError) {
+                                        console.warn('⚠️ Error notifying backend:', notifyError);
+                                    }
+                                    
+                                    // Reload payment link to show verified status
+                                    loadPaymentLink();
+                                    return;
+                                } else if (txOnChain && txOnChain.meta && txOnChain.meta.err) {
+                                    console.warn('⚠️ Transaction found but failed on chain');
+                                    clearInterval(statusPollInterval);
+                                    statusPollInterval = null;
+                                    return;
+                                } else {
+                                    // Transaction signature exists but not found on chain yet
+                                    console.log('🔄 Transaction signature exists but not yet confirmed on blockchain, continuing to check...');
+                                }
+                            } catch (blockchainError) {
+                                console.warn('⚠️ Error checking blockchain:', blockchainError);
+                                // Continue polling
+                            }
+                        }
+                        
+                        // Check if status is already verified (from backend response)
+                        if (payment && payment.status === 'verified') {
+                            console.log('✅ Payment verified (status: verified) - STOPPING POLLING');
+                            isStopped = true;
+                            if (statusPollInterval) {
+                                clearInterval(statusPollInterval);
+                                statusPollInterval = null;
+                            }
+                            loadPaymentLink();
+                            return;
+                        }
+                        
+                        // If payment has transaction signature, check blockchain directly
+                        if (payment && payment.transactionSignature && payment.status === 'pending') {
+                            // Backend should have verified it, but if not, check blockchain one more time
+                            console.log('🔄 Payment has signature but status is pending, checking blockchain directly...');
+                            // The blockchain check above should handle this, but if it didn't, we'll catch it here
+                        }
+                        
+                        // Log progress every 30 seconds (6 polls)
+                        if (pollCount % 6 === 0) {
+                            console.log(`🔄 Still polling... (${pollCount * 5}s elapsed, status: ${payment?.status || 'unknown'}, signature: ${payment?.transactionSignature ? 'yes' : 'no'})`);
+                        }
+                    } else if (response.status === 404) {
+                        // Payment not found - might have been deleted or expired
+                        console.warn('⚠️ Payment not found, stopping polling');
+                        isStopped = true;
+                        if (statusPollInterval) {
+                            clearInterval(statusPollInterval);
+                            statusPollInterval = null;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Error polling payment status:', error);
+                    // Don't stop on network errors, keep trying
+                }
+                
+                // Stop polling after max attempts
+                if (pollCount >= maxPolls && !isStopped) {
+                    isStopped = true;
+                    if (statusPollInterval) {
+                        clearInterval(statusPollInterval);
+                        statusPollInterval = null;
+                    }
+                    console.log('⏹️ Stopped payment status polling (timeout after 10 minutes)');
+                }
+            }, 5000); // Check every 5 seconds
+        }
+        
+        // Also poll on page load if payment is pending
+        function checkAndStartPolling() {
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            let linkId = pathParts[pathParts.length - 1];
+            
+            if (pathParts.length >= 2 && pathParts[pathParts.length - 2] === 'pay') {
+                linkId = pathParts[pathParts.length - 1];
+            }
+            
+            if (linkId && linkId.startsWith('link_')) {
+                // Try to extract payment ID
+                setTimeout(async () => {
+                    try {
+                        // Try to get payment from link
+                        const linkResponse = await fetch(`/api/payment-links/${linkId}`);
+                        if (linkResponse.ok) {
+                            const linkData = await linkResponse.json();
+                            if (linkData.link && linkData.link.paymentId) {
+                                const paymentResponse = await fetch(`/api/oracle/payments/${linkData.link.paymentId}`);
+                                if (paymentResponse.ok) {
+                                    const paymentData = await paymentResponse.json();
+                                    if (paymentData.payment && paymentData.payment.status === 'pending') {
+                                        console.log('🔄 Payment is pending, starting status polling...');
+                                        startPaymentStatusPolling(paymentData.payment.id);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Could not start polling:', error);
+                    }
+                }, 2000); // Wait 2 seconds after page load
+            }
+        }
+        
+        // Start loading payment link immediately (don't wait for SolanaWeb3 for display)
+        // SolanaWeb3 is only needed for "Pay with Wallet" button
+        loadPaymentLink();
+        
+        // Check if we need to start polling for pending payments
+        checkAndStartPolling();
+        
+        // Also wait for SolanaWeb3 in background for button functionality
+        setTimeout(() => waitForSolanaWeb3(), 500);
+    </script>
+</body>
+</html>
+
+

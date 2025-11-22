@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZK Commitment Demo - ZK-PayLink</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" style="max-width: 800px; margin: 2rem auto; padding: 2rem;">
+        <h1 style="margin-bottom: 2rem;">🔐 Zero-Knowledge Commitment Demo</h1>
+        
+        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+            <h3>How It Works</h3>
+            <ol style="color: var(--text-secondary); line-height: 1.8;">
+                <li>Generate a commitment for a payment (amount + secret)</li>
+                <li>Share only the commitment hash (not the amount)</li>
+                <li>Later, prove you know the amount without revealing it</li>
+                <li>Verifier confirms the proof matches the commitment</li>
+            </ol>
+        </div>
+
+        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+            <h3>Step 1: Generate Commitment</h3>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Payment ID</label>
+                <input type="text" id="paymentId" value="pay_demo_123" style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary);">
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Amount (keep private)</label>
+                <input type="number" id="amount" value="100" step="0.01" style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary);">
+            </div>
+            <button onclick="generateCommitment()" class="btn-primary">Generate Commitment</button>
+            
+            <div id="commitmentResult" style="margin-top: 1rem;"></div>
+        </div>
+
+        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px;">
+            <h3>Step 2: Verify Commitment</h3>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Payment ID</label>
+                <input type="text" id="verifyPaymentId" style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary);">
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Amount (to verify)</label>
+                <input type="number" id="verifyAmount" step="0.01" style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary);">
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Secret</label>
+                <input type="text" id="verifySecret" style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-family: monospace;">
+            </div>
+            <button onclick="verifyCommitment()" class="btn-primary">Verify Commitment</button>
+            
+            <div id="verifyResult" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+
+    <script src="zk-commitment.js"></script>
+    <script>
+        const zkSystem = new ZKCommitment();
+        let lastSecret = '';
+
+        async function generateCommitment() {
+            const paymentId = document.getElementById('paymentId').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            
+            if (!paymentId || !amount) {
+                alert('Please enter payment ID and amount');
+                return;
+            }
+
+            const secret = zkSystem.generateSecret();
+            lastSecret = secret;
+            
+            const result = await zkSystem.generateCommitment(paymentId, amount, secret);
+            
+            document.getElementById('commitmentResult').innerHTML = `
+                <div style="background: #10b98110; border-left: 4px solid #10b981; padding: 1rem; border-radius: 4px;">
+                    <div style="color: #10b981; font-weight: 600; margin-bottom: 0.5rem;">✓ Commitment Generated</div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong>Commitment Hash (public):</strong>
+                        <div style="background: var(--bg-tertiary); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; word-break: break-all; margin-top: 0.25rem;">
+                            ${result.commitment}
+                        </div>
+                    </div>
+                    <div>
+                        <strong>Secret (keep private!):</strong>
+                        <div style="background: var(--bg-tertiary); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; word-break: break-all; margin-top: 0.25rem;">
+                            ${result.secret}
+                        </div>
+                    </div>
+                    <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #10b98130; color: var(--text-secondary); font-size: 0.9rem;">
+                        💡 The commitment hash can be shared publicly. Only someone with the correct amount and secret can verify it.
+                    </div>
+                </div>
+            `;
+
+            // Auto-fill verify fields
+            document.getElementById('verifyPaymentId').value = paymentId;
+            document.getElementById('verifySecret').value = secret;
+        }
+
+        async function verifyCommitment() {
+            const paymentId = document.getElementById('verifyPaymentId').value;
+            const amount = parseFloat(document.getElementById('verifyAmount').value);
+            const secret = document.getElementById('verifySecret').value;
+            
+            if (!paymentId || !amount || !secret) {
+                alert('Please enter all fields');
+                return;
+            }
+
+            const result = await zkSystem.verifyCommitment(paymentId, amount, secret);
+            
+            if (result.valid) {
+                document.getElementById('verifyResult').innerHTML = `
+                    <div style="background: #10b98110; border-left: 4px solid #10b981; padding: 1rem; border-radius: 4px;">
+                        <div style="color: #10b981; font-weight: 600; margin-bottom: 0.5rem;">✓ Verification Successful</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                            The provided amount and secret match the commitment. Payment verified without revealing details to third parties!
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('verifyResult').innerHTML = `
+                    <div style="background: #ef444410; border-left: 4px solid #ef4444; padding: 1rem; border-radius: 4px;">
+                        <div style="color: #ef4444; font-weight: 600; margin-bottom: 0.5rem;">✗ Verification Failed</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                            ${result.error || 'The amount or secret does not match the commitment.'}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
