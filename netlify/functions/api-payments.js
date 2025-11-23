@@ -72,9 +72,9 @@ async function handleCreatePayment(event) {
         return jsonResponse(400, { error: `Unsupported token "${token}". Supported tokens: ${Object.keys(SUPPORTED_TOKENS).join(', ')}` });
     }
     
-    const merchantAddress = String(payload.merchantAddress || MERCHANT_ADDRESS || '').trim();
+    const merchantAddress = String(payload.merchantAddress || '').trim();
     if (!merchantAddress) {
-        return jsonResponse(400, { error: 'merchantAddress required. Pass it in the request body or configure MERCHANT_ADDRESS.' });
+        return jsonResponse(400, { error: 'merchantAddress is required in the request body' });
     }
     
     console.log('[API Payments] Creating payment with merchant address:', merchantAddress);
